@@ -1,7 +1,7 @@
 ![Foundatio](https://raw.githubusercontent.com/FoundatioFx/Foundatio/master/media/foundatio.png "Foundatio")
 
-[![Build status](https://ci.appveyor.com/api/projects/status/xdky8avbt35xr50p?svg=true)](https://ci.appveyor.com/project/Exceptionless/foundatio-aws-mi5u6)
-[![NuGet Version](http://img.shields.io/nuget/v/Foundatio.AWS.svg?style=flat)](https://www.nuget.org/packages/Foundatio.AWS/)
+[![Build status](https://ci.appveyor.com/api/projects/status/5r8jc8357trw3yji?svg=true)](https://ci.appveyor.com/project/Exceptionless/foundatio-minio)
+[![NuGet Version](http://img.shields.io/nuget/v/Foundatio.Minio.svg?style=flat)](https://www.nuget.org/packages/Foundatio.Minio/)
 [![Slack Status](https://slack.exceptionless.com/badge.svg)](https://slack.exceptionless.com)
 
 Pluggable foundation blocks for building loosely coupled distributed apps.
