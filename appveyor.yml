@@ -26,7 +26,7 @@ build_script:
 #  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
 test_script:
-  - ps: docker pull minio/minio
+  - ps: docker pull minio/minio:edge
   - ps: docker run -p 9000:9000 -e "MINIO_ACCESS_KEY=AKIAIOSFODNN7EXAMPLE" -e "MINIO_SECRET_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" minio/minio server /data
   - ps: dotnet test .\test\Foundatio.Minio.Tests\Foundatio.Minio.Tests.csproj -c Release
 
