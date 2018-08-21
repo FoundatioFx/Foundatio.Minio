@@ -6,7 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Foundatio" Version="7.0.1706" />
-    <PackageReference Include="Minio.NetCore" Version="1.1.1" />
+    <PackageReference Include="Minio" Version="2.0.1" />
   </ItemGroup>
 
 </Project>

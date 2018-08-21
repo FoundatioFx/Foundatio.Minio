@@ -146,7 +146,7 @@ namespace Foundatio.Storage {
                 throw new ArgumentNullException(nameof(targetPath));
 
             try {
-                await _client.CopyObjectAsync(_bucket, NormalizePath(path), _bucket, NormalizePath(targetPath), null, cancellationToken).AnyContext();
+                await _client.CopyObjectAsync(_bucket, NormalizePath(path), _bucket, NormalizePath(targetPath), null, null, cancellationToken).AnyContext();
                 return true;
             }
             catch (Exception ex) {
