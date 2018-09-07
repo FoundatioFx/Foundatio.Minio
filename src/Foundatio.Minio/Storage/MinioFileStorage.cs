@@ -38,7 +38,7 @@ namespace Foundatio.Storage {
                     ? connectionString.EndPoint.Substring(7)
                     : connectionString.EndPoint;
             }
-            _client = new MinioClient(endpoint, connectionString.AccessKey, connectionString.SecretKey, connectionString.Region ?? string.Empty);
+            _client = new MinioClient(endpoint, connectionString.AccessKey, connectionString.SecretKey, connectionString.Region ?? String.Empty);
             if (secure) {
                 _client.WithSSL();
             }
@@ -52,7 +52,7 @@ namespace Foundatio.Storage {
 
         ISerializer IHaveSerializer.Serializer => _serializer;
 
-        public async Task<Stream> GetFileStreamAsync(string path, CancellationToken cancellationToken = default(CancellationToken)) {
+        public async Task<Stream> GetFileStreamAsync(string path, CancellationToken cancellationToken = default) {
             if (String.IsNullOrEmpty(path))
                 throw new ArgumentNullException(nameof(path));
             try {
@@ -98,7 +98,7 @@ namespace Foundatio.Storage {
             }
         }
 
-        public async Task<bool> SaveFileAsync(string path, Stream stream, CancellationToken cancellationToken = default(CancellationToken)) {
+        public async Task<bool> SaveFileAsync(string path, Stream stream, CancellationToken cancellationToken = default) {
             if (String.IsNullOrEmpty(path))
                 throw new ArgumentNullException(nameof(path));
 
@@ -125,7 +125,7 @@ namespace Foundatio.Storage {
             }
         }
 
-        public async Task<bool> RenameFileAsync(string path, string newPath, CancellationToken cancellationToken = default(CancellationToken)) {
+        public async Task<bool> RenameFileAsync(string path, string newPath, CancellationToken cancellationToken = default) {
             if (String.IsNullOrEmpty(path))
                 throw new ArgumentNullException(nameof(path));
 
@@ -138,7 +138,7 @@ namespace Foundatio.Storage {
                    await DeleteFileAsync(path, cancellationToken).AnyContext();
         }
 
-        public async Task<bool> CopyFileAsync(string path, string targetPath, CancellationToken cancellationToken = default(CancellationToken)) {
+        public async Task<bool> CopyFileAsync(string path, string targetPath, CancellationToken cancellationToken = default) {
             if (String.IsNullOrEmpty(path))
                 throw new ArgumentNullException(nameof(path));
 
@@ -155,7 +155,7 @@ namespace Foundatio.Storage {
             }
         }
 
-        public async Task<bool> DeleteFileAsync(string path, CancellationToken cancellationToken = default(CancellationToken)) {
+        public async Task<bool> DeleteFileAsync(string path, CancellationToken cancellationToken = default) {
             if (String.IsNullOrEmpty(path))
                 throw new ArgumentNullException(nameof(path));
 
@@ -169,7 +169,7 @@ namespace Foundatio.Storage {
             }
         }
 
-        public async Task DeleteFilesAsync(string searchPattern = null, CancellationToken cancellation = default(CancellationToken)) {
+        public async Task DeleteFilesAsync(string searchPattern = null, CancellationToken cancellation = default) {
             var files = await GetFileListAsync(searchPattern, cancellationToken: cancellation).AnyContext();
             var result = await _client.RemoveObjectAsync(_bucket, files.Select(spec => NormalizePath(spec.Path)), cancellation).AnyContext();
             var resetEvent = new AutoResetEvent(false);
@@ -181,7 +181,7 @@ namespace Foundatio.Storage {
         }
 
         public Task<IEnumerable<FileSpec>> GetFileListAsync(string searchPattern = null, int? limit = null, int? skip = null,
-            CancellationToken cancellationToken = default(CancellationToken)) {
+            CancellationToken cancellationToken = default) {
             if (limit.HasValue && limit.Value <= 0)
                 return Task.FromResult(Enumerable.Empty<FileSpec>());
 
