@@ -3,20 +3,20 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27130.2027
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Foundatio.Minio", "src\Foundatio.Minio\Foundatio.Minio.csproj", "{6874DB4A-AA9E-484E-8E4D-D5A3429B16E4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Foundatio.Minio", "src\Foundatio.Minio\Foundatio.Minio.csproj", "{6874DB4A-AA9E-484E-8E4D-D5A3429B16E4}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{2B971C0C-F403-4AC3-8702-83278711C982}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
 		appveyor.yml = appveyor.yml
 		build\common.props = build\common.props
+		Dockerfile = Dockerfile
 		README.md = README.md
-		build\sourcelink.props = build\sourcelink.props
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{CD06C207-0E34-44A3-ACD2-016EA9F80CC9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Foundatio.Minio.Tests", "test\Foundatio.Minio.Tests\Foundatio.Minio.Tests.csproj", "{C0EFF2AE-64BF-4655-B25A-B08B77645959}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Foundatio.Minio.Tests", "test\Foundatio.Minio.Tests\Foundatio.Minio.Tests.csproj", "{C0EFF2AE-64BF-4655-B25A-B08B77645959}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

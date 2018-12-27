@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reactive.Linq;
 using System.Runtime.ExceptionServices;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -169,7 +170,7 @@ namespace Foundatio.Storage {
             }
         }
 
-        public async Task DeleteFilesAsync(string searchPattern = null, CancellationToken cancellation = default) {
+        public async Task<int> DeleteFilesAsync(string searchPattern = null, CancellationToken cancellation = default) {
             var files = await GetFileListAsync(searchPattern, cancellationToken: cancellation).AnyContext();
             var result = await _client.RemoveObjectAsync(_bucket, files.Select(spec => NormalizePath(spec.Path)), cancellation).AnyContext();
             var resetEvent = new AutoResetEvent(false);
@@ -178,10 +179,38 @@ namespace Foundatio.Storage {
                 resetEvent.Set();
             }, ()=> resetEvent.Set());
             resetEvent.WaitOne();
+
+            return await result.Count();
         }
 
-        public Task<IEnumerable<FileSpec>> GetFileListAsync(string searchPattern = null, int? limit = null, int? skip = null,
-            CancellationToken cancellationToken = default) {
+        public async Task<PagedFileListResult> GetPagedFileListAsync(int pageSize = 100, string searchPattern = null, CancellationToken cancellationToken = default) {
+            if (pageSize <= 0)
+                return PagedFileListResult.Empty;
+
+            searchPattern = NormalizePath(searchPattern);
+
+            var result = new PagedFileListResult(r => GetFiles(searchPattern, 1, pageSize, cancellationToken));
+            await result.NextPageAsync().AnyContext();
+            return result;
+        }
+
+        private async Task<NextPageResult> GetFiles(string searchPattern, int page, int pageSize, CancellationToken cancellationToken) {
+            int pagingLimit = pageSize;
+            int skip = (page - 1) * pagingLimit;
+            if (pagingLimit < Int32.MaxValue)
+                pagingLimit = pagingLimit + 1;
+
+            var list = (await GetFileListAsync(searchPattern, page, skip, cancellationToken).AnyContext()).ToList();
+            bool hasMore = false;
+            if (list.Count == pagingLimit) {
+                hasMore = true;
+                list.RemoveAt(pagingLimit);
+            }
+
+            return new NextPageResult { Success = true, HasMore = hasMore, Files = list, NextPageFunc = r => GetFiles(searchPattern, page + 1, pageSize, cancellationToken) };
+        }
+
+        private Task<IEnumerable<FileSpec>> GetFileListAsync(string searchPattern = null, int? limit = null, int? skip = null, CancellationToken cancellationToken = default) {
             if (limit.HasValue && limit.Value <= 0)
                 return Task.FromResult(Enumerable.Empty<FileSpec>());
 
