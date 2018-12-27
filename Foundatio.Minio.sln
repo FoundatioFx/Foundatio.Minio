@@ -16,7 +16,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{CD06C207-0E34-44A3-ACD2-016EA9F80CC9}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Foundatio.Minio.Tests", "test\Foundatio.Minio.Tests\Foundatio.Minio.Tests.csproj", "{C0EFF2AE-64BF-4655-B25A-B08B77645959}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Foundatio.Minio.Tests", "tests\Foundatio.Minio.Tests\Foundatio.Minio.Tests.csproj", "{C0EFF2AE-64BF-4655-B25A-B08B77645959}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
