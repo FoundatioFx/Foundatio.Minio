@@ -58,7 +58,7 @@ namespace Foundatio.Storage {
                 throw new ArgumentNullException(nameof(path));
             try {
                 Stream result = new MemoryStream();
-                await _client.GetObjectAsync(_bucket, NormalizePath(path), stream => stream.CopyTo(result), cancellationToken).AnyContext();
+                await _client.GetObjectAsync(_bucket, NormalizePath(path), stream => stream.CopyTo(result), null, cancellationToken).AnyContext();
                 result.Seek(0, SeekOrigin.Begin);
                 return result;
             }
@@ -113,7 +113,7 @@ namespace Foundatio.Storage {
             }
 
             try {
-                await _client.PutObjectAsync(_bucket, NormalizePath(path), seekableStream, seekableStream.Length - seekableStream.Position, null, null, cancellationToken).AnyContext();
+                await _client.PutObjectAsync(_bucket, NormalizePath(path), seekableStream, seekableStream.Length - seekableStream.Position, null, null, null, cancellationToken).AnyContext();
                 return true;
             }
             catch (Exception ex) {
@@ -147,7 +147,7 @@ namespace Foundatio.Storage {
                 throw new ArgumentNullException(nameof(targetPath));
 
             try {
-                await _client.CopyObjectAsync(_bucket, NormalizePath(path), _bucket, NormalizePath(targetPath), null, null, cancellationToken).AnyContext();
+                await _client.CopyObjectAsync(_bucket, NormalizePath(path), _bucket, NormalizePath(targetPath), null, null, null, null, cancellationToken).AnyContext();
                 return true;
             }
             catch (Exception ex) {
