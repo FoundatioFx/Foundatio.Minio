@@ -204,10 +204,15 @@ namespace Foundatio.Storage {
             bool hasMore = false;
             if (list.Count == pagingLimit) {
                 hasMore = true;
-                list.RemoveAt(pagingLimit);
+                list.RemoveAt(pagingLimit - 1);
             }
 
-            return new NextPageResult { Success = true, HasMore = hasMore, Files = list, NextPageFunc = r => GetFiles(searchPattern, page + 1, pageSize, cancellationToken) };
+            return new NextPageResult {
+                Success = true,
+                HasMore = hasMore,
+                Files = list,
+                NextPageFunc = hasMore ? r => GetFiles(searchPattern, page + 1, pageSize, cancellationToken) : (Func<PagedFileListResult, Task<NextPageResult>>)null
+            };
         }
 
         private Task<IEnumerable<FileSpec>> GetFileListAsync(string searchPattern = null, int? limit = null, int? skip = null, CancellationToken cancellationToken = default) {
