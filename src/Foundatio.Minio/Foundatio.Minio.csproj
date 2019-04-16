@@ -5,8 +5,8 @@
     <PackageTags>File;Storage;Minio;Distributed;</PackageTags>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Foundatio" Version="8.0.1965" />
-    <PackageReference Include="Minio" Version="3.0.4" />
+    <PackageReference Include="Foundatio" Version="8.1.2027" />
+    <PackageReference Include="Minio" Version="3.0.8" />
   </ItemGroup>
 
 </Project>
