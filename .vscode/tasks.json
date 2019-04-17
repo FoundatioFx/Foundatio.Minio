@@ -53,6 +53,14 @@
       "type": "shell",
       "group": "build",
       "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "docker: minio",
+      "command": "docker-compose up",
+      "type": "shell",
+      "isBackground": true,
+      "group": "test",
+      "problemMatcher": []
     }
   ]
 }

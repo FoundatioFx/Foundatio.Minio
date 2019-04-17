@@ -33,10 +33,9 @@ before_build:
 
 build_script:
   - docker build --target testrunner -t foundatio:test --build-arg VERSION_SUFFIX=${VERSION_SUFFIX} .
+  - docker run -p 9000:9000 -e "MINIO_ACCESS_KEY=Q3AM3UQ867SPQQA43P2F" -e "MINIO_SECRET_KEY=zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG" minio/minio server /data
   - docker run -e APPVEYOR_API_URL --net=host -v $(pwd)/artifacts:/app/artifacts foundatio:test
-#  - ps: docker pull minio/minio
-#  - ps: docker run -p 9000:9000 -e "MINIO_ACCESS_KEY=AKIAIOSFODNN7EXAMPLE" -e "MINIO_SECRET_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" minio/minio server /data
- 
+
 after_build:
   - docker build --target pack -t foundatio:pack --build-arg VERSION_SUFFIX=${VERSION_SUFFIX} .
   - docker run --rm -v $(pwd)/artifacts:/app/artifacts foundatio:pack

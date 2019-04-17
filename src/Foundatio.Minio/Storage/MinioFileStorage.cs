@@ -18,6 +18,8 @@ using Minio.Exceptions;
 namespace Foundatio.Storage {
     public class MinioFileStorage : IFileStorage {
         private readonly string _bucket;
+        private readonly bool _shouldAutoCreateBucket = false;
+        private bool _bucketExistsChecked = false;
         private readonly MinioClient _client;
         private readonly ISerializer _serializer;
         private readonly ILogger _logger;
@@ -44,6 +46,7 @@ namespace Foundatio.Storage {
                 _client.WithSSL();
             }
             _bucket = connectionString.Bucket;
+            _shouldAutoCreateBucket = options.AutoCreateBucket;
             _serializer = options.Serializer ?? DefaultSerializer.Instance;
             _logger = options.LoggerFactory?.CreateLogger(typeof(MinioFileStorage)) ?? NullLogger.Instance;
         }
@@ -53,16 +56,29 @@ namespace Foundatio.Storage {
 
         ISerializer IHaveSerializer.Serializer => _serializer;
 
+        private async Task EnsureBucketExists() {
+            if (!_shouldAutoCreateBucket || _bucketExistsChecked)
+                return;
+            
+            bool found = await _client.BucketExistsAsync(_bucket);
+            if (!found)
+                await _client.MakeBucketAsync(_bucket);
+            
+            _bucketExistsChecked = true;
+        }
+
         public async Task<Stream> GetFileStreamAsync(string path, CancellationToken cancellationToken = default) {
             if (String.IsNullOrEmpty(path))
                 throw new ArgumentNullException(nameof(path));
+
+            await EnsureBucketExists().AnyContext();
+
             try {
                 Stream result = new MemoryStream();
                 await _client.GetObjectAsync(_bucket, NormalizePath(path), stream => stream.CopyTo(result), null, cancellationToken).AnyContext();
                 result.Seek(0, SeekOrigin.Begin);
                 return result;
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 _logger.LogTrace(ex, "Error trying to get file stream: {Path}", path);
                 return null;
             }
@@ -71,6 +87,8 @@ namespace Foundatio.Storage {
         public async Task<FileSpec> GetFileInfoAsync(string path) {
             if (String.IsNullOrEmpty(path))
                 throw new ArgumentNullException(nameof(path));
+
+            await EnsureBucketExists().AnyContext();
 
             path = NormalizePath(path);
             try {
@@ -81,8 +99,7 @@ namespace Foundatio.Storage {
                     Created = metadata.LastModified.ToUniversalTime(),
                     Modified = metadata.LastModified.ToUniversalTime()
                 };
-            }
-            catch (Exception) {
+            } catch (Exception) {
                 return null;
             }
         }
@@ -91,10 +108,11 @@ namespace Foundatio.Storage {
             if (String.IsNullOrEmpty(path))
                 throw new ArgumentNullException(nameof(path));
 
+            await EnsureBucketExists().AnyContext();
+
             try {
                 return await _client.StatObjectAsync(_bucket, NormalizePath(path)).AnyContext() != null;
-            }
-            catch (Exception ex) when(ex is ObjectNotFoundException || ex is BucketNotFoundException) {
+            } catch (Exception ex) when(ex is ObjectNotFoundException || ex is BucketNotFoundException) {
                 return false;
             }
         }
@@ -106,6 +124,8 @@ namespace Foundatio.Storage {
             if (stream == null)
                 throw new ArgumentNullException(nameof(stream));
 
+            await EnsureBucketExists().AnyContext();
+
             var seekableStream = stream.CanSeek ? stream : new MemoryStream();
             if (!stream.CanSeek) {
                 await stream.CopyToAsync(seekableStream).AnyContext();
@@ -115,12 +135,10 @@ namespace Foundatio.Storage {
             try {
                 await _client.PutObjectAsync(_bucket, NormalizePath(path), seekableStream, seekableStream.Length - seekableStream.Position, null, null, null, cancellationToken).AnyContext();
                 return true;
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 _logger.LogError(ex, "Error trying to save file: {Path}", path);
                 return false;
-            }
-            finally {
+            } finally {
                 if (!stream.CanSeek)
                     seekableStream.Dispose();
             }
@@ -132,6 +150,8 @@ namespace Foundatio.Storage {
 
             if (String.IsNullOrEmpty(newPath))
                 throw new ArgumentNullException(nameof(newPath));
+
+            await EnsureBucketExists().AnyContext();
 
             path = NormalizePath(path);
             newPath = NormalizePath(newPath);
@@ -146,11 +166,12 @@ namespace Foundatio.Storage {
             if (String.IsNullOrEmpty(targetPath))
                 throw new ArgumentNullException(nameof(targetPath));
 
+            await EnsureBucketExists().AnyContext();
+
             try {
                 await _client.CopyObjectAsync(_bucket, NormalizePath(path), _bucket, NormalizePath(targetPath), null, null, null, null, cancellationToken).AnyContext();
                 return true;
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 _logger.LogError(ex, "Error trying to copy file {Path} to {TargetPath}.", path, targetPath);
                 return false;
             }
@@ -160,17 +181,20 @@ namespace Foundatio.Storage {
             if (String.IsNullOrEmpty(path))
                 throw new ArgumentNullException(nameof(path));
 
+            await EnsureBucketExists().AnyContext();
+
             try {
                 await _client.RemoveObjectAsync(_bucket, NormalizePath(path), cancellationToken).AnyContext();
                 return true;
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 _logger.LogDebug(ex, "Error trying to delete file: {Path}.", path);
                 return false;
             }
         }
 
         public async Task<int> DeleteFilesAsync(string searchPattern = null, CancellationToken cancellation = default) {
+            await EnsureBucketExists().AnyContext();
+
             var files = await GetFileListAsync(searchPattern, cancellationToken: cancellation).AnyContext();
             var result = await _client.RemoveObjectAsync(_bucket, files.Select(spec => NormalizePath(spec.Path)), cancellation).AnyContext();
             var resetEvent = new AutoResetEvent(false);
@@ -186,6 +210,8 @@ namespace Foundatio.Storage {
         public async Task<PagedFileListResult> GetPagedFileListAsync(int pageSize = 100, string searchPattern = null, CancellationToken cancellationToken = default) {
             if (pageSize <= 0)
                 return PagedFileListResult.Empty;
+
+            await EnsureBucketExists().AnyContext();
 
             searchPattern = NormalizePath(searchPattern);
 

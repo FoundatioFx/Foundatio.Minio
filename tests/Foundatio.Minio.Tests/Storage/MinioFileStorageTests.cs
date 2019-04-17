@@ -21,7 +21,7 @@ namespace Foundatio.Minio.Tests.Storage {
             if (String.IsNullOrEmpty(connectionStringBuilder.AccessKey) || String.IsNullOrEmpty(connectionStringBuilder.SecretKey))
                 return null;
 
-            return new MinioFileStorage(o => o.ConnectionString(connectionStringBuilder.ToString()).LoggerFactory(Log));
+            return new MinioFileStorage(o => o.ConnectionString(connectionStringBuilder.ToString()).AutoCreateBuckets().LoggerFactory(Log));
         }
 
         [Fact]
