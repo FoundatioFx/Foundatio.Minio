@@ -9,7 +9,7 @@ namespace Foundatio.Minio.Tests {
 
         public virtual void InvalidKeyShouldThrow() {
             var exception = Assert.Throws<ArgumentException>("connectionString", () => CreateConnectionStringBuilder("wrongaccess=TestAccessKey;SecretKey=TestSecretKey"));
-            Assert.Equal("The option 'wrongaccess' cannot be recognized in connection string.\nParameter name: connectionString", exception.Message);
+            Assert.Equal("The option 'wrongaccess' cannot be recognized in connection string. (Parameter 'connectionString')", exception.Message);
         }
 
         public virtual void CanParseAccessKey() {
