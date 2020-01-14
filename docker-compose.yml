@@ -11,3 +11,8 @@ services:
       MINIO_SECRET_KEY: "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG"
     ports:
       - "9000:9000"
+  ready:
+    image: dadarek/wait-for-dependencies
+    command: minio:9000
+    depends_on:
+      - minio
