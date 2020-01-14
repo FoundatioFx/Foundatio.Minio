@@ -1,6 +1,6 @@
 ![Foundatio](https://raw.githubusercontent.com/FoundatioFx/Foundatio/master/media/foundatio.png "Foundatio")
 
-[![Build status](https://ci.appveyor.com/api/projects/status/5r8jc8357trw3yji?svg=true)](https://ci.appveyor.com/project/Exceptionless/foundatio-minio)
+[![Build status](https://github.com/FoundatioFx/Foundatio.Minio/workflows/Build/badge.svg)](https://github.com/FoundatioFx/Foundatio.Minio/actions)
 [![NuGet Version](http://img.shields.io/nuget/v/Foundatio.Minio.svg?style=flat)](https://www.nuget.org/packages/Foundatio.Minio/)
 [![Slack Status](https://slack.exceptionless.com/badge.svg)](https://slack.exceptionless.com)
 
