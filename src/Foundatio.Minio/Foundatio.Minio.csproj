@@ -6,7 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Foundatio" Version="9.0.0" />
-    <PackageReference Include="Minio" Version="3.1.10" />
+    <PackageReference Include="Minio" Version="3.1.11" />
   </ItemGroup>
 
 </Project>
