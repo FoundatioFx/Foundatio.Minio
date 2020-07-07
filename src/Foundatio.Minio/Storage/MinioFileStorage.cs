@@ -75,7 +75,7 @@ namespace Foundatio.Storage {
 
             try {
                 Stream result = new MemoryStream();
-                await _client.GetObjectAsync(_bucket, NormalizePath(path), stream => stream.CopyTo(result), null, cancellationToken).AnyContext();
+                await _client.GetObjectAsync(_bucket, NormalizePath(path), async stream => await stream.CopyToAsync(result), null, cancellationToken).AnyContext();
                 result.Seek(0, SeekOrigin.Begin);
                 return result;
             } catch (Exception ex) {
