@@ -34,17 +34,25 @@ namespace Foundatio.Storage {
             if (connectionString.EndPoint.StartsWith("https://", StringComparison.OrdinalIgnoreCase)) {
                 endpoint = connectionString.EndPoint.Substring(8);
                 secure = true;
-            }
-            else {
+            } else {
                 secure = false;
                 endpoint = connectionString.EndPoint.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
                     ? connectionString.EndPoint.Substring(7)
                     : connectionString.EndPoint;
             }
-            _client = new MinioClient(endpoint, connectionString.AccessKey, connectionString.SecretKey, connectionString.Region ?? String.Empty);
-            if (secure) {
+
+            _client = new MinioClient()
+                .WithEndpoint(endpoint)
+                .WithCredentials(connectionString.AccessKey, connectionString.SecretKey);
+            
+            if (!String.IsNullOrEmpty(connectionString.Region))
+                _client.WithRegion(connectionString.Region ?? String.Empty);
+
+            _client.Build();
+
+            if (secure)
                 _client.WithSSL();
-            }
+            
             _bucket = connectionString.Bucket;
             _shouldAutoCreateBucket = options.AutoCreateBucket;
             _serializer = options.Serializer ?? DefaultSerializer.Instance;
@@ -60,9 +68,9 @@ namespace Foundatio.Storage {
             if (!_shouldAutoCreateBucket || _bucketExistsChecked)
                 return;
             
-            bool found = await _client.BucketExistsAsync(_bucket);
+            bool found = await _client.BucketExistsAsync(new BucketExistsArgs().WithBucket(_bucket));
             if (!found)
-                await _client.MakeBucketAsync(_bucket);
+                await _client.MakeBucketAsync(new MakeBucketArgs().WithBucket(_bucket));
             
             _bucketExistsChecked = true;
         }
@@ -75,7 +83,7 @@ namespace Foundatio.Storage {
 
             try {
                 Stream result = new MemoryStream();
-                await _client.GetObjectAsync(_bucket, NormalizePath(path), async stream => await stream.CopyToAsync(result), null, cancellationToken).AnyContext();
+                await _client.GetObjectAsync(new GetObjectArgs().WithBucket(_bucket).WithObject(NormalizePath(path)).WithCallbackStream(stream => stream.CopyToAsync(result).GetAwaiter().GetResult()), cancellationToken).AnyContext();
                 result.Seek(0, SeekOrigin.Begin);
                 return result;
             } catch (Exception ex) {
@@ -92,7 +100,7 @@ namespace Foundatio.Storage {
 
             path = NormalizePath(path);
             try {
-                var metadata = await _client.StatObjectAsync(_bucket, path).AnyContext();
+                var metadata = await _client.StatObjectAsync(new StatObjectArgs().WithBucket(_bucket).WithObject(path)).AnyContext();
                 return new FileSpec {
                     Path = path,
                     Size = metadata.Size,
@@ -111,7 +119,7 @@ namespace Foundatio.Storage {
             await EnsureBucketExists().AnyContext();
 
             try {
-                return await _client.StatObjectAsync(_bucket, NormalizePath(path)).AnyContext() != null;
+                return await _client.StatObjectAsync(new StatObjectArgs().WithBucket(_bucket).WithObject(NormalizePath(path))).AnyContext() != null;
             } catch (Exception ex) when(ex is ObjectNotFoundException || ex is BucketNotFoundException) {
                 return false;
             }
@@ -133,7 +141,7 @@ namespace Foundatio.Storage {
             }
 
             try {
-                await _client.PutObjectAsync(_bucket, NormalizePath(path), seekableStream, seekableStream.Length - seekableStream.Position, null, null, null, cancellationToken).AnyContext();
+                await _client.PutObjectAsync(new PutObjectArgs().WithBucket(_bucket).WithObject(NormalizePath(path)).WithStreamData(seekableStream).WithObjectSize(seekableStream.Length - seekableStream.Position), cancellationToken).AnyContext();
                 return true;
             } catch (Exception ex) {
                 _logger.LogError(ex, "Error trying to save file: {Path}", path);
@@ -169,7 +177,12 @@ namespace Foundatio.Storage {
             await EnsureBucketExists().AnyContext();
 
             try {
-                await _client.CopyObjectAsync(_bucket, NormalizePath(path), _bucket, NormalizePath(targetPath), null, null, null, null, cancellationToken).AnyContext();
+                var copySourceArgs = new CopySourceObjectArgs().WithBucket(_bucket).WithObject(NormalizePath(path));
+                
+                await _client.CopyObjectAsync(new CopyObjectArgs()
+                    .WithBucket(_bucket)
+                    .WithObject(NormalizePath(targetPath))
+                    .WithCopyObjectSource(copySourceArgs), cancellationToken).AnyContext();
                 return true;
             } catch (Exception ex) {
                 _logger.LogError(ex, "Error trying to copy file {Path} to {TargetPath}.", path, targetPath);
@@ -184,7 +197,7 @@ namespace Foundatio.Storage {
             await EnsureBucketExists().AnyContext();
 
             try {
-                await _client.RemoveObjectAsync(_bucket, NormalizePath(path), cancellationToken).AnyContext();
+                await _client.RemoveObjectAsync(new RemoveObjectArgs().WithBucket(_bucket).WithObject(NormalizePath(path)), cancellationToken).AnyContext();
                 return true;
             } catch (Exception ex) {
                 _logger.LogDebug(ex, "Error trying to delete file: {Path}.", path);
@@ -196,7 +209,10 @@ namespace Foundatio.Storage {
             await EnsureBucketExists().AnyContext();
 
             var files = await GetFileListAsync(searchPattern, cancellationToken: cancellation).AnyContext();
-            var result = await _client.RemoveObjectAsync(_bucket, files.Select(spec => NormalizePath(spec.Path)), cancellation).AnyContext();
+            if (files.Count() == 0)
+                return 0;
+
+            var result = await _client.RemoveObjectsAsync(new RemoveObjectsArgs().WithBucket(_bucket).WithObjects(files.Select(spec => NormalizePath(spec.Path)).ToList()), cancellation).AnyContext();
             var resetEvent = new AutoResetEvent(false);
             result.Subscribe(error => {
                 _logger.LogError("Error trying to delete file {FilePath}: {Message}", error.Key, error.Message);
@@ -224,7 +240,7 @@ namespace Foundatio.Storage {
             int pagingLimit = pageSize;
             int skip = (page - 1) * pagingLimit;
             if (pagingLimit < Int32.MaxValue)
-                pagingLimit = pagingLimit + 1;
+                pagingLimit++;
 
             var list = (await GetFileListAsync(searchPattern, pagingLimit, skip, cancellationToken).AnyContext()).ToList();
             bool hasMore = false;
@@ -250,14 +266,16 @@ namespace Foundatio.Storage {
             var objects = new List<Item>();
             ExceptionDispatchInfo exception = null;
             var resetEvent = new AutoResetEvent(false);
-            var observable = _client.ListObjectsAsync(_bucket, criteria.Prefix, true, cancellationToken);
+            var observable = _client.ListObjectsAsync(new ListObjectsArgs().WithBucket(_bucket).WithPrefix(criteria.Prefix).WithRecursive(true), cancellationToken);
             observable.Subscribe(item => {
                     if (!item.IsDir && (criteria.Pattern == null || criteria.Pattern.IsMatch(item.Key))) {
                         objects.Add(item);
                     }
                 }, error => {
-                    _logger.LogError(error, "Error trying to find files: {Pattern}", searchPattern);
-                    exception = ExceptionDispatchInfo.Capture(error);
+                    if (error.GetType().ToString() != "Minio.EmptyBucketOperation") {
+                        _logger.LogError(error, "Error trying to find files: {Pattern}", searchPattern);
+                        exception = ExceptionDispatchInfo.Capture(error);
+                    }
                     resetEvent.Set();
                 },
                 () => resetEvent.Set()
