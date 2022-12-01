@@ -1,14 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="..\..\build\common.props" />
   <PropertyGroup>
-    <TargetFrameworks>net5.0;net6.0</TargetFrameworks>
+    <TargetFrameworks>net6.0</TargetFrameworks>
     <PackageTags>File;Storage;Minio;Distributed;</PackageTags>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Minio" Version="4.0.4" />
-    <PackageReference Include="Foundatio" Version="10.5.1-alpha.0.12" Condition="'$(ReferenceFoundatioSource)' == '' OR '$(ReferenceFoundatioSource)' == 'false'" />
+    <PackageReference Include="Minio" Version="4.0.6" />
+    <PackageReference Include="Foundatio" Version="10.5.1-alpha.0.30" Condition="'$(ReferenceFoundatioSource)' == '' OR '$(ReferenceFoundatioSource)' == 'false'" />
 
     <ProjectReference Include="..\..\..\Foundatio\src\Foundatio\Foundatio.csproj" Condition="'$(ReferenceFoundatioSource)' == 'true'" />
   </ItemGroup>
-
 </Project>
