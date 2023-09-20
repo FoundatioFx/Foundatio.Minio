@@ -41,6 +41,7 @@ namespace Foundatio.Storage {
             : this(builder(new MinioFileStorageOptionsBuilder()).Build()) { }
 
         ISerializer IHaveSerializer.Serializer => _serializer;
+        public MinioClient Client => _client;
 
         private async Task EnsureBucketExists() {
             if (!_shouldAutoCreateBucket || _bucketExistsChecked)
