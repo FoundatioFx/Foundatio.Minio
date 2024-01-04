@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -13,6 +13,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Minio;
 using Minio.DataModel;
+using Minio.DataModel.Args;
 using Minio.Exceptions;
 
 namespace Foundatio.Storage {
@@ -20,7 +21,7 @@ namespace Foundatio.Storage {
         private readonly string _bucket;
         private readonly bool _shouldAutoCreateBucket;
         private bool _bucketExistsChecked;
-        private readonly MinioClient _client;
+        private readonly IMinioClient _client;
         private readonly ISerializer _serializer;
         private readonly ILogger _logger;
 
@@ -41,7 +42,7 @@ namespace Foundatio.Storage {
             : this(builder(new MinioFileStorageOptionsBuilder()).Build()) { }
 
         ISerializer IHaveSerializer.Serializer => _serializer;
-        public MinioClient Client => _client;
+        public IMinioClient Client => _client;
 
         private async Task EnsureBucketExists() {
             if (!_shouldAutoCreateBucket || _bucketExistsChecked)
@@ -353,7 +354,7 @@ namespace Foundatio.Storage {
             };
         }
 
-        private (MinioClient Client, string Bucket) CreateClient(MinioFileStorageOptions options)
+        private (IMinioClient Client, string Bucket) CreateClient(MinioFileStorageOptions options)
         {
             var connectionString = new MinioFileStorageConnectionStringBuilder(options.ConnectionString);
 
