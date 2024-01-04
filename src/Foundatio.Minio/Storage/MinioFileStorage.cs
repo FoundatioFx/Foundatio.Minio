@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -27,7 +27,7 @@ namespace Foundatio.Storage {
         public MinioFileStorage(MinioFileStorageOptions options) {
             if (options == null)
                 throw new ArgumentNullException(nameof(options));
-            
+
             _serializer = options.Serializer ?? DefaultSerializer.Instance;
             _logger = options.LoggerFactory?.CreateLogger(GetType()) ?? NullLogger.Instance;
 
@@ -36,7 +36,7 @@ namespace Foundatio.Storage {
             _bucket = bucket;
             _shouldAutoCreateBucket = options.AutoCreateBucket;
         }
-        
+
         public MinioFileStorage(Builder<MinioFileStorageOptionsBuilder, MinioFileStorageOptions> builder)
             : this(builder(new MinioFileStorageOptionsBuilder()).Build()) { }
 
@@ -58,15 +58,23 @@ namespace Foundatio.Storage {
             _bucketExistsChecked = true;
         }
 
-        public async Task<Stream> GetFileStreamAsync(string path, CancellationToken cancellationToken = default) {
+        [Obsolete($"Use {nameof(GetFileStreamAsync)} with {nameof(FileAccess)} instead to define read or write behaviour of stream")]
+        public Task<Stream> GetFileStreamAsync(string path, CancellationToken cancellationToken = default)
+            => GetFileStreamAsync(path, StreamMode.Read, cancellationToken);
+
+        public async Task<Stream> GetFileStreamAsync(string path, StreamMode streamMode, CancellationToken cancellationToken = default)
+        {
             if (String.IsNullOrEmpty(path))
                 throw new ArgumentNullException(nameof(path));
+
+            if (streamMode is StreamMode.Write)
+                throw new NotSupportedException($"Stream mode {streamMode} is not supported.");
 
             await EnsureBucketExists().AnyContext();
 
             string normalizedPath = NormalizePath(path);
             _logger.LogTrace("Getting file stream for {Path}", normalizedPath);
-            
+
             try {
                 Stream result = new MemoryStream();
                 await _client.GetObjectAsync(new GetObjectArgs().WithBucket(_bucket).WithObject(normalizedPath).WithCallbackStream(async (stream, _) => await stream.CopyToAsync(result).AnyContext()), cancellationToken).AnyContext();
@@ -106,7 +114,7 @@ namespace Foundatio.Storage {
                 throw new ArgumentNullException(nameof(path));
 
             await EnsureBucketExists().AnyContext();
-            
+
             string normalizedPath = NormalizePath(path);
             _logger.LogTrace("Checking if {Path} exists", normalizedPath);
 
@@ -128,7 +136,7 @@ namespace Foundatio.Storage {
 
             string normalizedPath = NormalizePath(path);
             _logger.LogTrace("Saving {Path}", normalizedPath);
-            
+
             var seekableStream = stream.CanSeek ? stream : new MemoryStream();
             if (!stream.CanSeek) {
                 await stream.CopyToAsync(seekableStream).AnyContext();
@@ -158,7 +166,7 @@ namespace Foundatio.Storage {
             string normalizedPath = NormalizePath(path);
             string normalizedNewPath = NormalizePath(newPath);
             _logger.LogInformation("Renaming {Path} to {NewPath}", normalizedPath, normalizedNewPath);
-            
+
             return await CopyFileAsync(normalizedPath, normalizedNewPath, cancellationToken).AnyContext() &&
                    await DeleteFileAsync(normalizedPath, cancellationToken).AnyContext();
         }
@@ -194,7 +202,7 @@ namespace Foundatio.Storage {
                 throw new ArgumentNullException(nameof(path));
 
             await EnsureBucketExists().AnyContext();
-            
+
             string normalizedPath = NormalizePath(path);
             _logger.LogTrace("Deleting {Path}", normalizedPath);
 
@@ -270,23 +278,23 @@ namespace Foundatio.Storage {
             var criteria = GetRequestCriteria(searchPattern);
 
             _logger.LogTrace(
-                s => s.Property("SearchPattern", searchPattern).Property("Limit", limit).Property("Skip", skip), 
+                s => s.Property("SearchPattern", searchPattern).Property("Limit", limit).Property("Skip", skip),
                 "Getting file list recursively matching {Prefix} and {Pattern}...", criteria.Prefix, criteria.Pattern
             );
-            
+
             ExceptionDispatchInfo exception = null;
             var resetEvent = new AutoResetEvent(false);
             var observable = _client.ListObjectsAsync(new ListObjectsArgs().WithBucket(_bucket).WithPrefix(criteria.Prefix).WithRecursive(true), cancellationToken);
             observable.Subscribe(item => {
                     if (item.IsDir)
                         return;
-                    
-                    if (criteria.Pattern != null && !criteria.Pattern.IsMatch(item.Key)) {
+
+                if (criteria.Pattern != null && !criteria.Pattern.IsMatch(item.Key)) {
                         _logger.LogTrace("Skipping {Path}: Doesn't match pattern", item.Key);
                         return;
                     }
-                    
-                    list.Add(item);
+
+                list.Add(item);
                 }, error => {
                     if (error.GetType().ToString() != "Minio.EmptyBucketOperation") {
                         _logger.LogError(error, "Error getting file list: {Message}", error.Message);
@@ -301,7 +309,7 @@ namespace Foundatio.Storage {
 
             if (skip.HasValue)
                 list = list.Skip(skip.Value).ToList();
-            
+
             if (limit.HasValue)
                 list = list.Take(limit.Value).ToList();
 
@@ -325,14 +333,14 @@ namespace Foundatio.Storage {
         private SearchCriteria GetRequestCriteria(string searchPattern) {
             if (String.IsNullOrEmpty(searchPattern))
                 return new SearchCriteria { Prefix = String.Empty };
-            
+
             string normalizedSearchPattern = NormalizePath(searchPattern);
             int wildcardPos = normalizedSearchPattern.IndexOf('*');
             bool hasWildcard = wildcardPos >= 0;
 
             string prefix = normalizedSearchPattern;
             Regex patternRegex = null;
-            
+
             if (hasWildcard) {
                 patternRegex = new Regex($"^{Regex.Escape(normalizedSearchPattern).Replace("\\*", ".*?")}$");
                 int slashPos = normalizedSearchPattern.LastIndexOf('/');
@@ -372,10 +380,10 @@ namespace Foundatio.Storage {
 
             if (secure)
                 client.WithSSL();
-            
+
             return (client, connectionString.Bucket);
         }
-        
+
         public void Dispose() { }
     }
 }
