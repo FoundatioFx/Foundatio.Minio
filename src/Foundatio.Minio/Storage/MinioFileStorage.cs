@@ -108,6 +108,9 @@ namespace Foundatio.Storage
             try
             {
                 var metadata = await _client.StatObjectAsync(new StatObjectArgs().WithBucket(_bucket).WithObject(normalizedPath)).AnyContext();
+                if (metadata.ExtraHeaders.TryGetValue("X-Minio-Error-Code", out string errorCode) && (String.Equals(errorCode, "NoSuchBucket") || String.Equals(errorCode, "NoSuchKey")))
+                    return null;
+
                 return new FileSpec
                 {
                     Path = normalizedPath,
@@ -135,7 +138,11 @@ namespace Foundatio.Storage
 
             try
             {
-                return await _client.StatObjectAsync(new StatObjectArgs().WithBucket(_bucket).WithObject(normalizedPath)).AnyContext() != null;
+                var metadata = await _client.StatObjectAsync(new StatObjectArgs().WithBucket(_bucket).WithObject(normalizedPath)).AnyContext();
+                if (metadata.ExtraHeaders.TryGetValue("X-Minio-Error-Code", out string errorCode) && (String.Equals(errorCode, "NoSuchBucket") || String.Equals(errorCode, "NoSuchKey")))
+                    return false;
+
+                return true;
             }
             catch (Exception ex) when (ex is ObjectNotFoundException or BucketNotFoundException)
             {
