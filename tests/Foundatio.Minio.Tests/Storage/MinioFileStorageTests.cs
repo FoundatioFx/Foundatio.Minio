@@ -10,6 +10,8 @@ namespace Foundatio.Minio.Tests.Storage
 {
     public class MinioFileStorageTests : FileStorageTestsBase
     {
+        private const string BUCKET_NAME = "foundatio";
+
         public MinioFileStorageTests(ITestOutputHelper output) : base(output) { }
 
         protected override IFileStorage GetStorage()
@@ -20,7 +22,7 @@ namespace Foundatio.Minio.Tests.Storage
                 AccessKey = section["ACCESS_KEY_ID"],
                 SecretKey = section["SECRET_ACCESS_KEY"],
                 EndPoint = section["ENDPOINT"],
-                Bucket = "foundatio"
+                Bucket = BUCKET_NAME
             };
             if (String.IsNullOrEmpty(connectionStringBuilder.AccessKey) || String.IsNullOrEmpty(connectionStringBuilder.SecretKey))
                 return null;
