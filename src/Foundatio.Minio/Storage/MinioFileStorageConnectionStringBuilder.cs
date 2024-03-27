@@ -1,41 +1,40 @@
 ﻿using System;
 
-namespace Foundatio.Storage
+namespace Foundatio.Storage;
+
+public class MinioFileStorageConnectionStringBuilder : MinioConnectionStringBuilder
 {
-    public class MinioFileStorageConnectionStringBuilder : MinioConnectionStringBuilder
+    private string _bucket;
+
+    public MinioFileStorageConnectionStringBuilder()
     {
-        private string _bucket;
+    }
 
-        public MinioFileStorageConnectionStringBuilder()
-        {
-        }
+    public MinioFileStorageConnectionStringBuilder(string connectionString) : base(connectionString)
+    {
+    }
 
-        public MinioFileStorageConnectionStringBuilder(string connectionString) : base(connectionString)
-        {
-        }
+    public string Bucket
+    {
+        get => string.IsNullOrEmpty(_bucket) ? "storage" : _bucket;
+        set => _bucket = value;
+    }
 
-        public string Bucket
+    protected override bool ParseItem(string key, string value)
+    {
+        if (String.Equals(key, "Bucket", StringComparison.OrdinalIgnoreCase))
         {
-            get => string.IsNullOrEmpty(_bucket) ? "storage" : _bucket;
-            set => _bucket = value;
+            Bucket = value;
+            return true;
         }
+        return base.ParseItem(key, value);
+    }
 
-        protected override bool ParseItem(string key, string value)
-        {
-            if (String.Equals(key, "Bucket", StringComparison.OrdinalIgnoreCase))
-            {
-                Bucket = value;
-                return true;
-            }
-            return base.ParseItem(key, value);
-        }
-
-        public override string ToString()
-        {
-            var connectionString = base.ToString();
-            if (!string.IsNullOrEmpty(_bucket))
-                connectionString += "Bucket=" + Bucket + ";";
-            return connectionString;
-        }
+    public override string ToString()
+    {
+        var connectionString = base.ToString();
+        if (!string.IsNullOrEmpty(_bucket))
+            connectionString += "Bucket=" + Bucket + ";";
+        return connectionString;
     }
 }
