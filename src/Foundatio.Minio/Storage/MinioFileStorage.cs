@@ -260,24 +260,27 @@ public class MinioFileStorage : IFileStorage
     {
         await EnsureBucketExists().AnyContext();
 
-        var files = await GetFileListAsync(searchPattern, cancellationToken: cancellation).AnyContext();
-        _logger.LogInformation("Deleting {FileCount} files matching {SearchPattern}", files.Count, searchPattern);
-        if (files.Count == 0)
-        {
-            _logger.LogTrace("Finished deleting {FileCount} files matching {SearchPattern}", files.Count, searchPattern);
-            return 0;
-        }
+        _logger.LogInformation("Deleting files matching {SearchPattern}", searchPattern);
 
-        var result = await _client.RemoveObjectsAsync(new RemoveObjectsArgs().WithBucket(_bucket).WithObjects(files.Select(spec => NormalizePath(spec.Path)).ToList()), cancellation).AnyContext();
-        var resetEvent = new AutoResetEvent(false);
-        result.Subscribe(error =>
+        int count = 0;
+        var result = await GetPagedFileListAsync(250, searchPattern, cancellation).AnyContext();
+        do
         {
-            _logger.LogError("Error deleting {Path}: {Message}", error.Key, error.Message);
-            resetEvent.Set();
-        }, () => resetEvent.Set());
-        resetEvent.WaitOne();
+            if (result.Files.Count == 0)
+                break;
 
-        int count = await result.Count();
+            var args = new RemoveObjectsArgs().WithBucket(_bucket)
+                .WithObjects(result.Files.Select(spec => NormalizePath(spec.Path)).ToList());
+
+            var s = await _client.RemoveObjectsAsync(args, cancellation).AnyContext();
+            count += s.Count;
+            foreach (var error in s)
+            {
+                count--;
+                _logger.LogError("Error deleting {Path}: {Message}", error.Key, error.Message);
+            }
+        } while (await result.NextPageAsync().AnyContext());
+
         _logger.LogTrace("Finished deleting {FileCount} files matching {SearchPattern}", count, searchPattern);
         return count;
     }
@@ -318,10 +321,10 @@ public class MinioFileStorage : IFileStorage
         };
     }
 
-    private Task<List<FileSpec>> GetFileListAsync(string searchPattern = null, int? limit = null, int? skip = null, CancellationToken cancellationToken = default)
+    private async Task<List<FileSpec>> GetFileListAsync(string searchPattern = null, int? limit = null, int? skip = null, CancellationToken cancellationToken = default)
     {
         if (limit is <= 0)
-            return Task.FromResult(new List<FileSpec>());
+            return new List<FileSpec>();
 
         var list = new List<Item>();
         var criteria = GetRequestCriteria(searchPattern);
@@ -331,34 +334,21 @@ public class MinioFileStorage : IFileStorage
             "Getting file list recursively matching {Prefix} and {Pattern}...", criteria.Prefix, criteria.Pattern
         );
 
-        ExceptionDispatchInfo exception = null;
-        var resetEvent = new AutoResetEvent(false);
-        var observable = _client.ListObjectsAsync(new ListObjectsArgs().WithBucket(_bucket).WithPrefix(criteria.Prefix).WithRecursive(true), cancellationToken);
-        observable.Subscribe(item =>
+        await foreach (var item in _client.ListObjectsEnumAsync(
+                           new ListObjectsArgs().WithBucket(_bucket).WithPrefix(criteria.Prefix).WithRecursive(true),
+                           cancellationToken))
         {
             if (item.IsDir)
-                return;
+                continue;
 
             if (criteria.Pattern != null && !criteria.Pattern.IsMatch(item.Key))
             {
                 _logger.LogTrace("Skipping {Path}: Doesn't match pattern", item.Key);
-                return;
+                continue;
             }
 
             list.Add(item);
-        }, error =>
-        {
-            if (error.GetType().ToString() != "Minio.EmptyBucketOperation")
-            {
-                _logger.LogError(error, "Error getting file list: {Message}", error.Message);
-                exception = ExceptionDispatchInfo.Capture(error);
-            }
-            resetEvent.Set();
-        },
-            () => resetEvent.Set()
-        );
-        resetEvent.WaitOne();
-        exception?.Throw();
+        }
 
         if (skip.HasValue)
             list = list.Skip(skip.Value).ToList();
@@ -366,13 +356,13 @@ public class MinioFileStorage : IFileStorage
         if (limit.HasValue)
             list = list.Take(limit.Value).ToList();
 
-        return Task.FromResult(list.Select(blob => new FileSpec
+        return list.Select(blob => new FileSpec
         {
             Path = blob.Key,
             Size = (long)blob.Size,
             Modified = DateTime.Parse(blob.LastModified),
             Created = DateTime.Parse(blob.LastModified)
-        }).ToList());
+        }).ToList();
     }
 
     private string NormalizePath(string path)
