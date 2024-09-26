@@ -43,6 +43,12 @@ public class MinioFileStorageTests : FileStorageTestsBase
     }
 
     [Fact]
+    public override Task CanGetFileListForSingleFileAsync()
+    {
+        return base.CanGetFileListForSingleFileAsync();
+    }
+
+    [Fact]
     public override Task CanGetPagedFileListForSingleFolderAsync()
     {
         return base.CanGetPagedFileListForSingleFolderAsync();
@@ -136,5 +142,17 @@ public class MinioFileStorageTests : FileStorageTestsBase
     public override Task WillRespectStreamOffsetAsync()
     {
         return base.WillRespectStreamOffsetAsync();
+    }
+
+    [Fact(Skip = "Write Stream is not yet supported")]
+    public override Task WillWriteStreamContentAsync()
+    {
+        return base.WillWriteStreamContentAsync();
+    }
+
+    [Fact]
+    public override Task CanSaveOverExistingStoredContent()
+    {
+        return base.CanSaveOverExistingStoredContent();
     }
 }
