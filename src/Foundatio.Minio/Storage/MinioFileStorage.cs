@@ -271,9 +271,9 @@ public class MinioFileStorage : IFileStorage
             var args = new RemoveObjectsArgs().WithBucket(_bucket)
                 .WithObjects(result.Files.Select(spec => NormalizePath(spec.Path)).ToList());
 
-            var s = await _client.RemoveObjectsAsync(args, cancellation).AnyContext();
-            count += s.Count;
-            foreach (var error in s)
+            var response = await _client.RemoveObjectsAsync(args, cancellation).AnyContext();
+            count += result.Files.Count;
+            foreach (var error in response)
             {
                 count--;
                 _logger.LogError("Error deleting {Path}: {Message}", error.Key, error.Message);
