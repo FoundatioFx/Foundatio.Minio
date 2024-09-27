@@ -9,10 +9,6 @@ services:
       MINIO_ROOT_PASSWORD: "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG"
     ports:
       - "9000:9000"
-    deploy:
-      resources:
-        limits:
-          memory: 1g
 
   ready:
     image: andrewlock/wait-for-dependencies
