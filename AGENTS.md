@@ -36,8 +36,8 @@ dotnet format Foundatio.Minio.slnx
 ```text
 src
 └── Foundatio.Minio                    # Minio provider implementations
-    ├── Storage                      # IFileStorage implementations for Minio
-    └── Extensions                   # Extension methods for DI
+    ├── Storage                        # IFileStorage implementations for Minio
+    └── Extensions                     # Extension methods for DI
 tests
 └── Foundatio.Minio.Tests              # Unit and integration tests
 ```
