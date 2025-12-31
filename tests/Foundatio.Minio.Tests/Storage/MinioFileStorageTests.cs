@@ -4,7 +4,6 @@ using Foundatio.Storage;
 using Foundatio.Tests.Storage;
 using Foundatio.Tests.Utility;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Foundatio.Minio.Tests.Storage;
 
