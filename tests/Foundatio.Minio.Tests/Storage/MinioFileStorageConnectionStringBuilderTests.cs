@@ -1,4 +1,4 @@
-﻿using Foundatio.Storage;
+using Foundatio.Storage;
 using Xunit;
 
 namespace Foundatio.Minio.Tests.Storage;
@@ -60,7 +60,7 @@ public class MinioFileStorageConnectionStringBuilderTests : ConnectionStringBuil
             Assert.Equal("TestAccessKey", connectionStringBuilder.AccessKey);
             Assert.Equal("TestSecretKey", connectionStringBuilder.SecretKey);
             Assert.Equal("TestBucket", ((MinioFileStorageConnectionStringBuilder)connectionStringBuilder).Bucket);
-            Assert.Null(connectionStringBuilder.Region);
+            Assert.Empty(connectionStringBuilder.Region);
         }
     }
 

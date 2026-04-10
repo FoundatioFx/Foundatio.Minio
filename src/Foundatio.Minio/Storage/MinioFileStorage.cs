@@ -63,10 +63,10 @@ public class MinioFileStorage : IFileStorage
     }
 
     [Obsolete($"Use {nameof(GetFileStreamAsync)} with {nameof(FileAccess)} instead to define read or write behaviour of stream")]
-    public Task<Stream> GetFileStreamAsync(string path, CancellationToken cancellationToken = default)
+    public Task<Stream?> GetFileStreamAsync(string path, CancellationToken cancellationToken = default)
         => GetFileStreamAsync(path, StreamMode.Read, cancellationToken);
 
-    public async Task<Stream> GetFileStreamAsync(string path, StreamMode streamMode, CancellationToken cancellationToken = default)
+    public async Task<Stream?> GetFileStreamAsync(string path, StreamMode streamMode, CancellationToken cancellationToken = default)
     {
         if (String.IsNullOrEmpty(path))
             throw new ArgumentNullException(nameof(path));
@@ -93,7 +93,7 @@ public class MinioFileStorage : IFileStorage
         }
     }
 
-    public async Task<FileSpec> GetFileInfoAsync(string path)
+    public async Task<FileSpec?> GetFileInfoAsync(string path)
     {
         if (String.IsNullOrEmpty(path))
             throw new ArgumentNullException(nameof(path));
@@ -106,7 +106,7 @@ public class MinioFileStorage : IFileStorage
         try
         {
             var metadata = await _client.StatObjectAsync(new StatObjectArgs().WithBucket(_bucket).WithObject(normalizedPath)).AnyContext();
-            if (metadata.ExtraHeaders.TryGetValue("X-Minio-Error-Code", out string errorCode) && (String.Equals(errorCode, "NoSuchBucket") || String.Equals(errorCode, "NoSuchKey")))
+            if (metadata.ExtraHeaders.TryGetValue("X-Minio-Error-Code", out string? errorCode) && (String.Equals(errorCode, "NoSuchBucket") || String.Equals(errorCode, "NoSuchKey")))
                 return null;
 
             return new FileSpec
@@ -137,7 +137,7 @@ public class MinioFileStorage : IFileStorage
         try
         {
             var metadata = await _client.StatObjectAsync(new StatObjectArgs().WithBucket(_bucket).WithObject(normalizedPath)).AnyContext();
-            if (metadata.ExtraHeaders.TryGetValue("X-Minio-Error-Code", out string errorCode) && (String.Equals(errorCode, "NoSuchBucket") || String.Equals(errorCode, "NoSuchKey")))
+            if (metadata.ExtraHeaders.TryGetValue("X-Minio-Error-Code", out string? errorCode) && (String.Equals(errorCode, "NoSuchBucket") || String.Equals(errorCode, "NoSuchKey")))
                 return false;
 
             return true;
@@ -254,7 +254,7 @@ public class MinioFileStorage : IFileStorage
         }
     }
 
-    public async Task<int> DeleteFilesAsync(string searchPattern = null, CancellationToken cancellation = default)
+    public async Task<int> DeleteFilesAsync(string? searchPattern = null, CancellationToken cancellation = default)
     {
         await EnsureBucketExists().AnyContext();
 
@@ -283,7 +283,7 @@ public class MinioFileStorage : IFileStorage
         return count;
     }
 
-    public async Task<PagedFileListResult> GetPagedFileListAsync(int pageSize = 100, string searchPattern = null, CancellationToken cancellationToken = default)
+    public async Task<PagedFileListResult> GetPagedFileListAsync(int pageSize = 100, string? searchPattern = null, CancellationToken cancellationToken = default)
     {
         if (pageSize <= 0)
             return PagedFileListResult.Empty;
@@ -295,7 +295,7 @@ public class MinioFileStorage : IFileStorage
         return result;
     }
 
-    private async Task<NextPageResult> GetFiles(string searchPattern, int page, int pageSize, CancellationToken cancellationToken)
+    private async Task<NextPageResult> GetFiles(string? searchPattern, int page, int pageSize, CancellationToken cancellationToken)
     {
         int pagingLimit = pageSize;
         int skip = (page - 1) * pagingLimit;
@@ -319,7 +319,7 @@ public class MinioFileStorage : IFileStorage
         };
     }
 
-    private async Task<List<FileSpec>> GetFileListAsync(string searchPattern = null, int? limit = null, int? skip = null, CancellationToken cancellationToken = default)
+    private async Task<List<FileSpec>> GetFileListAsync(string? searchPattern = null, int? limit = null, int? skip = null, CancellationToken cancellationToken = default)
     {
         if (limit is <= 0)
             return new List<FileSpec>();
@@ -329,7 +329,7 @@ public class MinioFileStorage : IFileStorage
 
         _logger.LogTrace(
             s => s.Property("SearchPattern", searchPattern).Property("Limit", limit).Property("Skip", skip),
-            "Getting file list recursively matching {Prefix} and {Pattern}...", criteria.Prefix, criteria.Pattern
+            "Getting file list recursively matching {Prefix} and {Pattern}...", criteria.Prefix, criteria.Pattern!
         );
 
         await foreach (var item in _client.ListObjectsEnumAsync(
@@ -365,16 +365,16 @@ public class MinioFileStorage : IFileStorage
 
     private string NormalizePath(string path)
     {
-        return path?.Replace('\\', '/');
+        return path.Replace('\\', '/');
     }
 
     private class SearchCriteria
     {
-        public string Prefix { get; set; }
-        public Regex Pattern { get; set; }
+        public string Prefix { get; set; } = null!;
+        public Regex? Pattern { get; set; }
     }
 
-    private SearchCriteria GetRequestCriteria(string searchPattern)
+    private SearchCriteria GetRequestCriteria(string? searchPattern)
     {
         if (String.IsNullOrEmpty(searchPattern))
             return new SearchCriteria { Prefix = String.Empty };
@@ -384,7 +384,7 @@ public class MinioFileStorage : IFileStorage
         bool hasWildcard = wildcardPos >= 0;
 
         string prefix = normalizedSearchPattern;
-        Regex patternRegex = null;
+        Regex? patternRegex = null;
 
         if (hasWildcard)
         {

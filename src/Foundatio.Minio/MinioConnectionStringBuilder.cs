@@ -1,17 +1,17 @@
-﻿using System;
+using System;
 using System.Linq;
 
 namespace Foundatio;
 
 public class MinioConnectionStringBuilder
 {
-    public string AccessKey { get; set; }
+    public string AccessKey { get; set; } = null!;
 
-    public string SecretKey { get; set; }
+    public string SecretKey { get; set; } = null!;
 
-    public string Region { get; set; }
+    public string Region { get; set; } = null!;
 
-    public string EndPoint { get; set; }
+    public string EndPoint { get; set; } = null!;
 
     protected MinioConnectionStringBuilder() { }
 

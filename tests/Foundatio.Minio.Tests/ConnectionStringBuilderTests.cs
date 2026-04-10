@@ -22,7 +22,7 @@ public abstract class ConnectionStringBuilderTests
             var connectionStringBuilder = CreateConnectionStringBuilder($"{key}=TestAccessKey;SecretKey=TestSecretKey;");
             Assert.Equal("TestAccessKey", connectionStringBuilder.AccessKey);
             Assert.Equal("TestSecretKey", connectionStringBuilder.SecretKey);
-            Assert.Null(connectionStringBuilder.Region);
+            Assert.Empty(connectionStringBuilder.Region);
         }
     }
 
@@ -33,7 +33,7 @@ public abstract class ConnectionStringBuilderTests
             var connectionStringBuilder = CreateConnectionStringBuilder($"AccessKey=TestAccessKey;{key}=TestSecretKey;");
             Assert.Equal("TestAccessKey", connectionStringBuilder.AccessKey);
             Assert.Equal("TestSecretKey", connectionStringBuilder.SecretKey);
-            Assert.Null(connectionStringBuilder.Region);
+            Assert.Empty(connectionStringBuilder.Region);
         }
     }
 
