@@ -155,12 +155,23 @@ public class MinioFileStorage : IFileStorage
         string normalizedPath = NormalizePath(path)!;
         _logger.LogTrace("Saving {Path}", normalizedPath);
 
-        var seekableStream = stream.CanSeek ? stream : new MemoryStream();
-        if (!stream.CanSeek)
+        if (stream.CanSeek)
         {
-            await stream.CopyToAsync(seekableStream).AnyContext();
-            seekableStream.Seek(0, SeekOrigin.Begin);
+            try
+            {
+                await _client.PutObjectAsync(new PutObjectArgs().WithBucket(_bucket).WithObject(normalizedPath).WithStreamData(stream).WithObjectSize(stream.Length - stream.Position), cancellationToken).AnyContext();
+                return true;
+            }
+            catch (MinioException ex)
+            {
+                _logger.LogError(ex, "Error saving {Path}: {Message}", normalizedPath, ex.Message);
+                return false;
+            }
         }
+
+        using var seekableStream = new MemoryStream();
+        await stream.CopyToAsync(seekableStream).AnyContext();
+        seekableStream.Seek(0, SeekOrigin.Begin);
 
         try
         {
@@ -171,11 +182,6 @@ public class MinioFileStorage : IFileStorage
         {
             _logger.LogError(ex, "Error saving {Path}: {Message}", normalizedPath, ex.Message);
             return false;
-        }
-        finally
-        {
-            if (!stream.CanSeek)
-                seekableStream.Dispose();
         }
     }
 
@@ -413,10 +419,8 @@ public class MinioFileStorage : IFileStorage
         }
 
         var client = new MinioClient()
-            .WithEndpoint(endpoint);
-
-        if (!String.IsNullOrEmpty(connectionString.AccessKey) && !String.IsNullOrEmpty(connectionString.SecretKey))
-            client.WithCredentials(connectionString.AccessKey, connectionString.SecretKey);
+            .WithEndpoint(endpoint)
+            .WithCredentials(connectionString.AccessKey, connectionString.SecretKey);
 
         if (!String.IsNullOrEmpty(connectionString.Region))
             client.WithRegion(connectionString.Region);
@@ -429,5 +433,8 @@ public class MinioFileStorage : IFileStorage
         return (client, connectionString.Bucket);
     }
 
-    public void Dispose() { }
+    public void Dispose()
+    {
+        _client.Dispose();
+    }
 }
