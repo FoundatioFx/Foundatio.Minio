@@ -18,9 +18,9 @@ public class MinioFileStorageTests : FileStorageTestsBase
         var section = Configuration.GetSection("Minio");
         var connectionStringBuilder = new MinioFileStorageConnectionStringBuilder
         {
-            AccessKey = section["ACCESS_KEY_ID"]!,
-            SecretKey = section["SECRET_ACCESS_KEY"]!,
-            EndPoint = section["ENDPOINT"]!,
+            AccessKey = section["ACCESS_KEY_ID"] ?? String.Empty,
+            SecretKey = section["SECRET_ACCESS_KEY"] ?? String.Empty,
+            EndPoint = section["ENDPOINT"] ?? String.Empty,
             Bucket = BUCKET_NAME
         };
         if (String.IsNullOrEmpty(connectionStringBuilder.AccessKey) || String.IsNullOrEmpty(connectionStringBuilder.SecretKey) || String.IsNullOrEmpty(connectionStringBuilder.EndPoint))

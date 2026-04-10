@@ -426,8 +426,10 @@ public class MinioFileStorage : IFileStorage
         }
 
         var client = new MinioClient()
-            .WithEndpoint(endpoint)
-            .WithCredentials(connectionString.AccessKey, connectionString.SecretKey);
+            .WithEndpoint(endpoint);
+
+        if (!String.IsNullOrEmpty(connectionString.AccessKey) && !String.IsNullOrEmpty(connectionString.SecretKey))
+            client.WithCredentials(connectionString.AccessKey, connectionString.SecretKey);
 
         if (!String.IsNullOrEmpty(connectionString.Region))
             client.WithRegion(connectionString.Region);
