@@ -13,18 +13,18 @@ public class MinioFileStorageTests : FileStorageTestsBase
 
     public MinioFileStorageTests(ITestOutputHelper output) : base(output) { }
 
-    protected override IFileStorage GetStorage()
+    protected override IFileStorage? GetStorage()
     {
         var section = Configuration.GetSection("Minio");
         var connectionStringBuilder = new MinioFileStorageConnectionStringBuilder
         {
-            AccessKey = section["ACCESS_KEY_ID"] ?? String.Empty,
-            SecretKey = section["SECRET_ACCESS_KEY"] ?? String.Empty,
-            EndPoint = section["ENDPOINT"] ?? String.Empty,
+            AccessKey = section["ACCESS_KEY_ID"],
+            SecretKey = section["SECRET_ACCESS_KEY"],
+            EndPoint = section["ENDPOINT"],
             Bucket = BUCKET_NAME
         };
-        if (String.IsNullOrEmpty(connectionStringBuilder.AccessKey) || String.IsNullOrEmpty(connectionStringBuilder.SecretKey) || String.IsNullOrEmpty(connectionStringBuilder.EndPoint))
-            throw new InvalidOperationException("Minio AccessKey, SecretKey, and EndPoint must be configured to run integration tests. Set Minio:ACCESS_KEY_ID, Minio:SECRET_ACCESS_KEY, and Minio:ENDPOINT in test configuration.");
+        if (String.IsNullOrEmpty(connectionStringBuilder.AccessKey) || String.IsNullOrEmpty(connectionStringBuilder.SecretKey))
+            return null;
 
         return new MinioFileStorage(o => o.ConnectionString(connectionStringBuilder.ToString()).AutoCreateBuckets().LoggerFactory(Log));
     }

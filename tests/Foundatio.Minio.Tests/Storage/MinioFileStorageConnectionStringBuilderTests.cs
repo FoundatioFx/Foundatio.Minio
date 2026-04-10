@@ -60,7 +60,7 @@ public class MinioFileStorageConnectionStringBuilderTests : ConnectionStringBuil
             Assert.Equal("TestAccessKey", connectionStringBuilder.AccessKey);
             Assert.Equal("TestSecretKey", connectionStringBuilder.SecretKey);
             Assert.Equal("TestBucket", ((MinioFileStorageConnectionStringBuilder)connectionStringBuilder).Bucket);
-            Assert.Empty(connectionStringBuilder.Region);
+            Assert.Null(connectionStringBuilder.Region);
         }
     }
 

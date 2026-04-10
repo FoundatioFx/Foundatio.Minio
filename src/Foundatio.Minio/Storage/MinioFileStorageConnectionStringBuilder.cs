@@ -1,10 +1,11 @@
 ﻿using System;
+using System.Text;
 
 namespace Foundatio.Storage;
 
 public class MinioFileStorageConnectionStringBuilder : MinioConnectionStringBuilder
 {
-    private string _bucket = String.Empty;
+    private string? _bucket;
 
     public MinioFileStorageConnectionStringBuilder()
     {
@@ -32,9 +33,9 @@ public class MinioFileStorageConnectionStringBuilder : MinioConnectionStringBuil
 
     public override string ToString()
     {
-        var connectionString = base.ToString();
+        var sb = new StringBuilder(base.ToString());
         if (!String.IsNullOrEmpty(_bucket))
-            connectionString += "Bucket=" + Bucket + ";";
-        return connectionString;
+            sb.Append("Bucket=").Append(Bucket).Append(';');
+        return sb.ToString();
     }
 }

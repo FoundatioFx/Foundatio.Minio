@@ -1,17 +1,18 @@
 using System;
 using System.Linq;
+using System.Text;
 
 namespace Foundatio;
 
 public class MinioConnectionStringBuilder
 {
-    public string AccessKey { get; set; } = String.Empty;
+    public string? AccessKey { get; set; }
 
-    public string SecretKey { get; set; } = String.Empty;
+    public string? SecretKey { get; set; }
 
-    public string Region { get; set; } = String.Empty;
+    public string? Region { get; set; }
 
-    public string EndPoint { get; set; } = String.Empty;
+    public string? EndPoint { get; set; }
 
     protected MinioConnectionStringBuilder() { }
 
@@ -74,15 +75,15 @@ public class MinioConnectionStringBuilder
 
     public override string ToString()
     {
-        var connectionString = String.Empty;
+        var sb = new StringBuilder();
         if (!String.IsNullOrEmpty(AccessKey))
-            connectionString += "AccessKey=" + AccessKey + ";";
+            sb.Append("AccessKey=").Append(AccessKey).Append(';');
         if (!String.IsNullOrEmpty(SecretKey))
-            connectionString += "SecretKey=" + SecretKey + ";";
+            sb.Append("SecretKey=").Append(SecretKey).Append(';');
         if (!String.IsNullOrEmpty(Region))
-            connectionString += "Region=" + Region + ";";
+            sb.Append("Region=").Append(Region).Append(';');
         if (!String.IsNullOrEmpty(EndPoint))
-            connectionString += "EndPoint=" + EndPoint + ";";
-        return connectionString;
+            sb.Append("EndPoint=").Append(EndPoint).Append(';');
+        return sb.ToString();
     }
 }
