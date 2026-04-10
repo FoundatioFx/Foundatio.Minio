@@ -23,8 +23,8 @@ public class MinioFileStorageTests : FileStorageTestsBase
             EndPoint = section["ENDPOINT"]!,
             Bucket = BUCKET_NAME
         };
-        if (String.IsNullOrEmpty(connectionStringBuilder.AccessKey) || String.IsNullOrEmpty(connectionStringBuilder.SecretKey))
-            throw new InvalidOperationException("Minio AccessKey and SecretKey must be configured to run integration tests. Set Minio:ACCESS_KEY_ID and Minio:SECRET_ACCESS_KEY in test configuration.");
+        if (String.IsNullOrEmpty(connectionStringBuilder.AccessKey) || String.IsNullOrEmpty(connectionStringBuilder.SecretKey) || String.IsNullOrEmpty(connectionStringBuilder.EndPoint))
+            throw new InvalidOperationException("Minio AccessKey, SecretKey, and EndPoint must be configured to run integration tests. Set Minio:ACCESS_KEY_ID, Minio:SECRET_ACCESS_KEY, and Minio:ENDPOINT in test configuration.");
 
         return new MinioFileStorage(o => o.ConnectionString(connectionStringBuilder.ToString()).AutoCreateBuckets().LoggerFactory(Log));
     }

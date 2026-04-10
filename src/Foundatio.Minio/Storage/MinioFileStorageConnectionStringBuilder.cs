@@ -4,7 +4,7 @@ namespace Foundatio.Storage;
 
 public class MinioFileStorageConnectionStringBuilder : MinioConnectionStringBuilder
 {
-    private string _bucket = string.Empty;
+    private string _bucket = String.Empty;
 
     public MinioFileStorageConnectionStringBuilder()
     {
@@ -16,7 +16,7 @@ public class MinioFileStorageConnectionStringBuilder : MinioConnectionStringBuil
 
     public string Bucket
     {
-        get => string.IsNullOrEmpty(_bucket) ? "storage" : _bucket;
+        get => String.IsNullOrEmpty(_bucket) ? "storage" : _bucket;
         set => _bucket = value;
     }
 
@@ -33,7 +33,7 @@ public class MinioFileStorageConnectionStringBuilder : MinioConnectionStringBuil
     public override string ToString()
     {
         var connectionString = base.ToString();
-        if (!string.IsNullOrEmpty(_bucket))
+        if (!String.IsNullOrEmpty(_bucket))
             connectionString += "Bucket=" + Bucket + ";";
         return connectionString;
     }

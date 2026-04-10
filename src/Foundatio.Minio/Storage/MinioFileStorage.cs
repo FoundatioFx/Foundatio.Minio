@@ -329,7 +329,7 @@ public class MinioFileStorage : IFileStorage
 
         _logger.LogTrace(
             s => s.Property("SearchPattern", searchPattern).Property("Limit", limit).Property("Skip", skip),
-            "Getting file list recursively matching {Prefix} and {Pattern}...", criteria.Prefix, criteria.Pattern!
+            "Getting file list recursively matching {Prefix} and {Pattern}...", criteria.Prefix, (object?)criteria.Pattern ?? "(none)"
         );
 
         await foreach (var item in _client.ListObjectsEnumAsync(
@@ -370,7 +370,7 @@ public class MinioFileStorage : IFileStorage
 
     private class SearchCriteria
     {
-        public string Prefix { get; set; } = string.Empty;
+        public string Prefix { get; set; } = String.Empty;
         public Regex? Pattern { get; set; }
     }
 
@@ -402,10 +402,13 @@ public class MinioFileStorage : IFileStorage
 
     private (IMinioClient Client, string Bucket) CreateClient(MinioFileStorageOptions options)
     {
+        if (String.IsNullOrEmpty(options.ConnectionString))
+            throw new ArgumentException("ConnectionString is required.", nameof(options.ConnectionString));
+
         var connectionString = new MinioFileStorageConnectionStringBuilder(options.ConnectionString);
 
         if (String.IsNullOrEmpty(connectionString.EndPoint))
-            throw new ArgumentException("EndPoint is required in the connection string.", nameof(options));
+            throw new ArgumentException("EndPoint is required in the connection string.", nameof(options.ConnectionString));
 
         string endpoint;
         bool secure;

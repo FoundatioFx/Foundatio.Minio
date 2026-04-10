@@ -5,13 +5,13 @@ namespace Foundatio;
 
 public class MinioConnectionStringBuilder
 {
-    public string AccessKey { get; set; } = string.Empty;
+    public string AccessKey { get; set; } = String.Empty;
 
-    public string SecretKey { get; set; } = string.Empty;
+    public string SecretKey { get; set; } = String.Empty;
 
-    public string Region { get; set; } = string.Empty;
+    public string Region { get; set; } = String.Empty;
 
-    public string EndPoint { get; set; } = string.Empty;
+    public string EndPoint { get; set; } = String.Empty;
 
     protected MinioConnectionStringBuilder() { }
 
@@ -74,14 +74,14 @@ public class MinioConnectionStringBuilder
 
     public override string ToString()
     {
-        var connectionString = string.Empty;
-        if (!string.IsNullOrEmpty(AccessKey))
+        var connectionString = String.Empty;
+        if (!String.IsNullOrEmpty(AccessKey))
             connectionString += "AccessKey=" + AccessKey + ";";
-        if (!string.IsNullOrEmpty(SecretKey))
+        if (!String.IsNullOrEmpty(SecretKey))
             connectionString += "SecretKey=" + SecretKey + ";";
-        if (!string.IsNullOrEmpty(Region))
+        if (!String.IsNullOrEmpty(Region))
             connectionString += "Region=" + Region + ";";
-        if (!string.IsNullOrEmpty(EndPoint))
+        if (!String.IsNullOrEmpty(EndPoint))
             connectionString += "EndPoint=" + EndPoint + ";";
         return connectionString;
     }
