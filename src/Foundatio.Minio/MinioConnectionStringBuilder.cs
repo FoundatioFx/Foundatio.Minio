@@ -18,8 +18,7 @@ public class MinioConnectionStringBuilder
 
     protected MinioConnectionStringBuilder(string connectionString)
     {
-        if (String.IsNullOrEmpty(connectionString))
-            throw new ArgumentNullException(nameof(connectionString));
+        ArgumentException.ThrowIfNullOrEmpty(connectionString);
         Parse(connectionString);
     }
 

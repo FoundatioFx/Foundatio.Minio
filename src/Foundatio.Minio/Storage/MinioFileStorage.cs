@@ -27,8 +27,7 @@ public class MinioFileStorage : IFileStorage
 
     public MinioFileStorage(MinioFileStorageOptions options)
     {
-        if (options == null)
-            throw new ArgumentNullException(nameof(options));
+        ArgumentNullException.ThrowIfNull(options);
 
         _serializer = options.Serializer ?? DefaultSerializer.Instance;
         _logger = options.LoggerFactory?.CreateLogger(GetType()) ?? NullLogger.Instance;
@@ -68,15 +67,14 @@ public class MinioFileStorage : IFileStorage
 
     public async Task<Stream?> GetFileStreamAsync(string path, StreamMode streamMode, CancellationToken cancellationToken = default)
     {
-        if (String.IsNullOrEmpty(path))
-            throw new ArgumentNullException(nameof(path));
+        ArgumentException.ThrowIfNullOrEmpty(path);
 
         if (streamMode is StreamMode.Write)
             throw new NotSupportedException($"Stream mode {streamMode} is not supported.");
 
         await EnsureBucketExists().AnyContext();
 
-        string normalizedPath = NormalizePath(path);
+        string normalizedPath = NormalizePath(path)!;
         _logger.LogTrace("Getting file stream for {Path}", normalizedPath);
 
         try
@@ -86,7 +84,7 @@ public class MinioFileStorage : IFileStorage
             result.Seek(0, SeekOrigin.Begin);
             return result;
         }
-        catch (Exception ex)
+        catch (MinioException ex)
         {
             _logger.LogError(ex, "Unable to get file stream for {Path}: {Message}", normalizedPath, ex.Message);
             return null;
@@ -95,12 +93,11 @@ public class MinioFileStorage : IFileStorage
 
     public async Task<FileSpec?> GetFileInfoAsync(string path)
     {
-        if (String.IsNullOrEmpty(path))
-            throw new ArgumentNullException(nameof(path));
+        ArgumentException.ThrowIfNullOrEmpty(path);
 
         await EnsureBucketExists().AnyContext();
 
-        string normalizedPath = NormalizePath(path);
+        string normalizedPath = NormalizePath(path)!;
         _logger.LogTrace("Getting file info for {Path}", normalizedPath);
 
         try
@@ -117,21 +114,20 @@ public class MinioFileStorage : IFileStorage
                 Modified = metadata.LastModified.ToUniversalTime()
             };
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is ObjectNotFoundException or BucketNotFoundException)
         {
-            _logger.LogError(ex, "Unable to get file info for {Path}: {Message}", normalizedPath, ex.Message);
+            _logger.LogDebug(ex, "Unable to get file info for {Path}: {Message}", normalizedPath, ex.Message);
             return null;
         }
     }
 
     public async Task<bool> ExistsAsync(string path)
     {
-        if (String.IsNullOrEmpty(path))
-            throw new ArgumentNullException(nameof(path));
+        ArgumentException.ThrowIfNullOrEmpty(path);
 
         await EnsureBucketExists().AnyContext();
 
-        string normalizedPath = NormalizePath(path);
+        string normalizedPath = NormalizePath(path)!;
         _logger.LogTrace("Checking if {Path} exists", normalizedPath);
 
         try
@@ -151,14 +147,12 @@ public class MinioFileStorage : IFileStorage
 
     public async Task<bool> SaveFileAsync(string path, Stream stream, CancellationToken cancellationToken = default)
     {
-        if (String.IsNullOrEmpty(path))
-            throw new ArgumentNullException(nameof(path));
-        if (stream == null)
-            throw new ArgumentNullException(nameof(stream));
+        ArgumentException.ThrowIfNullOrEmpty(path);
+        ArgumentNullException.ThrowIfNull(stream);
 
         await EnsureBucketExists().AnyContext();
 
-        string normalizedPath = NormalizePath(path);
+        string normalizedPath = NormalizePath(path)!;
         _logger.LogTrace("Saving {Path}", normalizedPath);
 
         var seekableStream = stream.CanSeek ? stream : new MemoryStream();
@@ -173,7 +167,7 @@ public class MinioFileStorage : IFileStorage
             await _client.PutObjectAsync(new PutObjectArgs().WithBucket(_bucket).WithObject(normalizedPath).WithStreamData(seekableStream).WithObjectSize(seekableStream.Length - seekableStream.Position), cancellationToken).AnyContext();
             return true;
         }
-        catch (Exception ex)
+        catch (MinioException ex)
         {
             _logger.LogError(ex, "Error saving {Path}: {Message}", normalizedPath, ex.Message);
             return false;
@@ -187,15 +181,13 @@ public class MinioFileStorage : IFileStorage
 
     public async Task<bool> RenameFileAsync(string path, string newPath, CancellationToken cancellationToken = default)
     {
-        if (String.IsNullOrEmpty(path))
-            throw new ArgumentNullException(nameof(path));
-        if (String.IsNullOrEmpty(newPath))
-            throw new ArgumentNullException(nameof(newPath));
+        ArgumentException.ThrowIfNullOrEmpty(path);
+        ArgumentException.ThrowIfNullOrEmpty(newPath);
 
         await EnsureBucketExists().AnyContext();
 
-        string normalizedPath = NormalizePath(path);
-        string normalizedNewPath = NormalizePath(newPath);
+        string normalizedPath = NormalizePath(path)!;
+        string normalizedNewPath = NormalizePath(newPath)!;
         _logger.LogInformation("Renaming {Path} to {NewPath}", normalizedPath, normalizedNewPath);
 
         return await CopyFileAsync(normalizedPath, normalizedNewPath, cancellationToken).AnyContext() &&
@@ -204,15 +196,13 @@ public class MinioFileStorage : IFileStorage
 
     public async Task<bool> CopyFileAsync(string path, string targetPath, CancellationToken cancellationToken = default)
     {
-        if (String.IsNullOrEmpty(path))
-            throw new ArgumentNullException(nameof(path));
-        if (String.IsNullOrEmpty(targetPath))
-            throw new ArgumentNullException(nameof(targetPath));
+        ArgumentException.ThrowIfNullOrEmpty(path);
+        ArgumentException.ThrowIfNullOrEmpty(targetPath);
 
         await EnsureBucketExists().AnyContext();
 
-        string normalizedPath = NormalizePath(path);
-        string normalizedTargetPath = NormalizePath(targetPath);
+        string normalizedPath = NormalizePath(path)!;
+        string normalizedTargetPath = NormalizePath(targetPath)!;
         _logger.LogInformation("Copying {Path} to {TargetPath}", normalizedPath, normalizedTargetPath);
 
         try
@@ -225,7 +215,7 @@ public class MinioFileStorage : IFileStorage
                 .WithCopyObjectSource(copySourceArgs), cancellationToken).AnyContext();
             return true;
         }
-        catch (Exception ex)
+        catch (MinioException ex)
         {
             _logger.LogError(ex, "Error copying {Path} to {TargetPath}: {Message}", normalizedPath, normalizedTargetPath, ex.Message);
             return false;
@@ -234,12 +224,11 @@ public class MinioFileStorage : IFileStorage
 
     public async Task<bool> DeleteFileAsync(string path, CancellationToken cancellationToken = default)
     {
-        if (String.IsNullOrEmpty(path))
-            throw new ArgumentNullException(nameof(path));
+        ArgumentException.ThrowIfNullOrEmpty(path);
 
         await EnsureBucketExists().AnyContext();
 
-        string normalizedPath = NormalizePath(path);
+        string normalizedPath = NormalizePath(path)!;
         _logger.LogTrace("Deleting {Path}", normalizedPath);
 
         try
@@ -247,7 +236,7 @@ public class MinioFileStorage : IFileStorage
             await _client.RemoveObjectAsync(new RemoveObjectArgs().WithBucket(_bucket).WithObject(normalizedPath), cancellationToken).AnyContext();
             return true;
         }
-        catch (Exception ex)
+        catch (MinioException ex)
         {
             _logger.LogError(ex, "Unable to delete {Path}: {Message}", normalizedPath, ex.Message);
             return false;
@@ -268,7 +257,7 @@ public class MinioFileStorage : IFileStorage
                 break;
 
             var args = new RemoveObjectsArgs().WithBucket(_bucket)
-                .WithObjects(result.Files.Select(spec => NormalizePath(spec.Path)).ToList());
+                .WithObjects(result.Files.Select(spec => NormalizePath(spec.Path)!).ToList());
 
             var response = await _client.RemoveObjectsAsync(args, cancellation).AnyContext();
             count += result.Files.Count;
@@ -363,14 +352,14 @@ public class MinioFileStorage : IFileStorage
         }).ToList();
     }
 
-    private string NormalizePath(string path)
+    private string? NormalizePath(string? path)
     {
-        return path.Replace('\\', '/');
+        return path?.Replace('\\', '/');
     }
 
-    private class SearchCriteria
+    private record SearchCriteria
     {
-        public string Prefix { get; set; } = String.Empty;
+        public required string Prefix { get; set; }
         public Regex? Pattern { get; set; }
     }
 
@@ -379,7 +368,7 @@ public class MinioFileStorage : IFileStorage
         if (String.IsNullOrEmpty(searchPattern))
             return new SearchCriteria { Prefix = String.Empty };
 
-        string normalizedSearchPattern = NormalizePath(searchPattern);
+        string normalizedSearchPattern = NormalizePath(searchPattern)!;
         int wildcardPos = normalizedSearchPattern.IndexOf('*');
         bool hasWildcard = wildcardPos >= 0;
 
@@ -402,13 +391,11 @@ public class MinioFileStorage : IFileStorage
 
     private (IMinioClient Client, string Bucket) CreateClient(MinioFileStorageOptions options)
     {
-        if (String.IsNullOrEmpty(options.ConnectionString))
-            throw new ArgumentException("ConnectionString is required.", nameof(options.ConnectionString));
+        ArgumentException.ThrowIfNullOrEmpty(options.ConnectionString, nameof(options.ConnectionString));
 
         var connectionString = new MinioFileStorageConnectionStringBuilder(options.ConnectionString);
 
-        if (String.IsNullOrEmpty(connectionString.EndPoint))
-            throw new ArgumentException("EndPoint is required in the connection string.", nameof(options.ConnectionString));
+        ArgumentException.ThrowIfNullOrEmpty(connectionString.EndPoint, nameof(connectionString.EndPoint));
 
         string endpoint;
         bool secure;
