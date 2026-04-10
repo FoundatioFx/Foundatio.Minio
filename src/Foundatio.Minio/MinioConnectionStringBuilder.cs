@@ -5,13 +5,13 @@ namespace Foundatio;
 
 public class MinioConnectionStringBuilder
 {
-    public string AccessKey { get; set; } = null!;
+    public string AccessKey { get; set; } = string.Empty;
 
-    public string SecretKey { get; set; } = null!;
+    public string SecretKey { get; set; } = string.Empty;
 
-    public string Region { get; set; } = null!;
+    public string Region { get; set; } = string.Empty;
 
-    public string EndPoint { get; set; } = null!;
+    public string EndPoint { get; set; } = string.Empty;
 
     protected MinioConnectionStringBuilder() { }
 

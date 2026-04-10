@@ -4,7 +4,7 @@ namespace Foundatio.Storage;
 
 public class MinioFileStorageConnectionStringBuilder : MinioConnectionStringBuilder
 {
-    private string _bucket = null!;
+    private string _bucket = string.Empty;
 
     public MinioFileStorageConnectionStringBuilder()
     {

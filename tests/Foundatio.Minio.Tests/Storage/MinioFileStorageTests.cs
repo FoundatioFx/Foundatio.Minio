@@ -24,7 +24,7 @@ public class MinioFileStorageTests : FileStorageTestsBase
             Bucket = BUCKET_NAME
         };
         if (String.IsNullOrEmpty(connectionStringBuilder.AccessKey) || String.IsNullOrEmpty(connectionStringBuilder.SecretKey))
-            return null!;
+            throw new InvalidOperationException("Minio AccessKey and SecretKey must be configured to run integration tests. Set Minio:ACCESS_KEY_ID and Minio:SECRET_ACCESS_KEY in test configuration.");
 
         return new MinioFileStorage(o => o.ConnectionString(connectionStringBuilder.ToString()).AutoCreateBuckets().LoggerFactory(Log));
     }

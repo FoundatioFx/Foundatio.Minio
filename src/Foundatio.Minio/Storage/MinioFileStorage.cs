@@ -370,7 +370,7 @@ public class MinioFileStorage : IFileStorage
 
     private class SearchCriteria
     {
-        public string Prefix { get; set; } = null!;
+        public string Prefix { get; set; } = string.Empty;
         public Regex? Pattern { get; set; }
     }
 
@@ -404,6 +404,9 @@ public class MinioFileStorage : IFileStorage
     {
         var connectionString = new MinioFileStorageConnectionStringBuilder(options.ConnectionString);
 
+        if (String.IsNullOrEmpty(connectionString.EndPoint))
+            throw new ArgumentException("EndPoint is required in the connection string.", nameof(options));
+
         string endpoint;
         bool secure;
         if (connectionString.EndPoint.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
@@ -424,7 +427,7 @@ public class MinioFileStorage : IFileStorage
             .WithCredentials(connectionString.AccessKey, connectionString.SecretKey);
 
         if (!String.IsNullOrEmpty(connectionString.Region))
-            client.WithRegion(connectionString.Region ?? String.Empty);
+            client.WithRegion(connectionString.Region);
 
         client.Build();
 
