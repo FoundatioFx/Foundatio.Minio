@@ -27,8 +27,7 @@ public class MinioFileStorage : IFileStorage
 
     public MinioFileStorage(MinioFileStorageOptions options)
     {
-        if (options == null)
-            throw new ArgumentNullException(nameof(options));
+        ArgumentNullException.ThrowIfNull(options);
 
         _serializer = options.Serializer ?? DefaultSerializer.Instance;
         _logger = options.LoggerFactory?.CreateLogger(GetType()) ?? NullLogger.Instance;
@@ -63,13 +62,12 @@ public class MinioFileStorage : IFileStorage
     }
 
     [Obsolete($"Use {nameof(GetFileStreamAsync)} with {nameof(FileAccess)} instead to define read or write behaviour of stream")]
-    public Task<Stream> GetFileStreamAsync(string path, CancellationToken cancellationToken = default)
+    public Task<Stream?> GetFileStreamAsync(string path, CancellationToken cancellationToken = default)
         => GetFileStreamAsync(path, StreamMode.Read, cancellationToken);
 
-    public async Task<Stream> GetFileStreamAsync(string path, StreamMode streamMode, CancellationToken cancellationToken = default)
+    public async Task<Stream?> GetFileStreamAsync(string path, StreamMode streamMode, CancellationToken cancellationToken = default)
     {
-        if (String.IsNullOrEmpty(path))
-            throw new ArgumentNullException(nameof(path));
+        ArgumentException.ThrowIfNullOrEmpty(path);
 
         if (streamMode is StreamMode.Write)
             throw new NotSupportedException($"Stream mode {streamMode} is not supported.");
@@ -86,17 +84,16 @@ public class MinioFileStorage : IFileStorage
             result.Seek(0, SeekOrigin.Begin);
             return result;
         }
-        catch (Exception ex)
+        catch (MinioException ex)
         {
             _logger.LogError(ex, "Unable to get file stream for {Path}: {Message}", normalizedPath, ex.Message);
             return null;
         }
     }
 
-    public async Task<FileSpec> GetFileInfoAsync(string path)
+    public async Task<FileSpec?> GetFileInfoAsync(string path)
     {
-        if (String.IsNullOrEmpty(path))
-            throw new ArgumentNullException(nameof(path));
+        ArgumentException.ThrowIfNullOrEmpty(path);
 
         await EnsureBucketExists().AnyContext();
 
@@ -106,7 +103,7 @@ public class MinioFileStorage : IFileStorage
         try
         {
             var metadata = await _client.StatObjectAsync(new StatObjectArgs().WithBucket(_bucket).WithObject(normalizedPath)).AnyContext();
-            if (metadata.ExtraHeaders.TryGetValue("X-Minio-Error-Code", out string errorCode) && (String.Equals(errorCode, "NoSuchBucket") || String.Equals(errorCode, "NoSuchKey")))
+            if (metadata.ExtraHeaders.TryGetValue("X-Minio-Error-Code", out string? errorCode) && (String.Equals(errorCode, "NoSuchBucket") || String.Equals(errorCode, "NoSuchKey")))
                 return null;
 
             return new FileSpec
@@ -117,17 +114,16 @@ public class MinioFileStorage : IFileStorage
                 Modified = metadata.LastModified.ToUniversalTime()
             };
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is ObjectNotFoundException or BucketNotFoundException)
         {
-            _logger.LogError(ex, "Unable to get file info for {Path}: {Message}", normalizedPath, ex.Message);
+            _logger.LogDebug(ex, "Unable to get file info for {Path}: {Message}", normalizedPath, ex.Message);
             return null;
         }
     }
 
     public async Task<bool> ExistsAsync(string path)
     {
-        if (String.IsNullOrEmpty(path))
-            throw new ArgumentNullException(nameof(path));
+        ArgumentException.ThrowIfNullOrEmpty(path);
 
         await EnsureBucketExists().AnyContext();
 
@@ -137,7 +133,7 @@ public class MinioFileStorage : IFileStorage
         try
         {
             var metadata = await _client.StatObjectAsync(new StatObjectArgs().WithBucket(_bucket).WithObject(normalizedPath)).AnyContext();
-            if (metadata.ExtraHeaders.TryGetValue("X-Minio-Error-Code", out string errorCode) && (String.Equals(errorCode, "NoSuchBucket") || String.Equals(errorCode, "NoSuchKey")))
+            if (metadata.ExtraHeaders.TryGetValue("X-Minio-Error-Code", out string? errorCode) && (String.Equals(errorCode, "NoSuchBucket") || String.Equals(errorCode, "NoSuchKey")))
                 return false;
 
             return true;
@@ -151,10 +147,8 @@ public class MinioFileStorage : IFileStorage
 
     public async Task<bool> SaveFileAsync(string path, Stream stream, CancellationToken cancellationToken = default)
     {
-        if (String.IsNullOrEmpty(path))
-            throw new ArgumentNullException(nameof(path));
-        if (stream == null)
-            throw new ArgumentNullException(nameof(stream));
+        ArgumentException.ThrowIfNullOrEmpty(path);
+        ArgumentNullException.ThrowIfNull(stream);
 
         await EnsureBucketExists().AnyContext();
 
@@ -173,7 +167,7 @@ public class MinioFileStorage : IFileStorage
             await _client.PutObjectAsync(new PutObjectArgs().WithBucket(_bucket).WithObject(normalizedPath).WithStreamData(seekableStream).WithObjectSize(seekableStream.Length - seekableStream.Position), cancellationToken).AnyContext();
             return true;
         }
-        catch (Exception ex)
+        catch (MinioException ex)
         {
             _logger.LogError(ex, "Error saving {Path}: {Message}", normalizedPath, ex.Message);
             return false;
@@ -187,10 +181,8 @@ public class MinioFileStorage : IFileStorage
 
     public async Task<bool> RenameFileAsync(string path, string newPath, CancellationToken cancellationToken = default)
     {
-        if (String.IsNullOrEmpty(path))
-            throw new ArgumentNullException(nameof(path));
-        if (String.IsNullOrEmpty(newPath))
-            throw new ArgumentNullException(nameof(newPath));
+        ArgumentException.ThrowIfNullOrEmpty(path);
+        ArgumentException.ThrowIfNullOrEmpty(newPath);
 
         await EnsureBucketExists().AnyContext();
 
@@ -204,10 +196,8 @@ public class MinioFileStorage : IFileStorage
 
     public async Task<bool> CopyFileAsync(string path, string targetPath, CancellationToken cancellationToken = default)
     {
-        if (String.IsNullOrEmpty(path))
-            throw new ArgumentNullException(nameof(path));
-        if (String.IsNullOrEmpty(targetPath))
-            throw new ArgumentNullException(nameof(targetPath));
+        ArgumentException.ThrowIfNullOrEmpty(path);
+        ArgumentException.ThrowIfNullOrEmpty(targetPath);
 
         await EnsureBucketExists().AnyContext();
 
@@ -225,7 +215,7 @@ public class MinioFileStorage : IFileStorage
                 .WithCopyObjectSource(copySourceArgs), cancellationToken).AnyContext();
             return true;
         }
-        catch (Exception ex)
+        catch (MinioException ex)
         {
             _logger.LogError(ex, "Error copying {Path} to {TargetPath}: {Message}", normalizedPath, normalizedTargetPath, ex.Message);
             return false;
@@ -234,8 +224,7 @@ public class MinioFileStorage : IFileStorage
 
     public async Task<bool> DeleteFileAsync(string path, CancellationToken cancellationToken = default)
     {
-        if (String.IsNullOrEmpty(path))
-            throw new ArgumentNullException(nameof(path));
+        ArgumentException.ThrowIfNullOrEmpty(path);
 
         await EnsureBucketExists().AnyContext();
 
@@ -247,14 +236,14 @@ public class MinioFileStorage : IFileStorage
             await _client.RemoveObjectAsync(new RemoveObjectArgs().WithBucket(_bucket).WithObject(normalizedPath), cancellationToken).AnyContext();
             return true;
         }
-        catch (Exception ex)
+        catch (MinioException ex)
         {
             _logger.LogError(ex, "Unable to delete {Path}: {Message}", normalizedPath, ex.Message);
             return false;
         }
     }
 
-    public async Task<int> DeleteFilesAsync(string searchPattern = null, CancellationToken cancellation = default)
+    public async Task<int> DeleteFilesAsync(string? searchPattern = null, CancellationToken cancellation = default)
     {
         await EnsureBucketExists().AnyContext();
 
@@ -283,7 +272,7 @@ public class MinioFileStorage : IFileStorage
         return count;
     }
 
-    public async Task<PagedFileListResult> GetPagedFileListAsync(int pageSize = 100, string searchPattern = null, CancellationToken cancellationToken = default)
+    public async Task<PagedFileListResult> GetPagedFileListAsync(int pageSize = 100, string? searchPattern = null, CancellationToken cancellationToken = default)
     {
         if (pageSize <= 0)
             return PagedFileListResult.Empty;
@@ -295,7 +284,7 @@ public class MinioFileStorage : IFileStorage
         return result;
     }
 
-    private async Task<NextPageResult> GetFiles(string searchPattern, int page, int pageSize, CancellationToken cancellationToken)
+    private async Task<NextPageResult> GetFiles(string? searchPattern, int page, int pageSize, CancellationToken cancellationToken)
     {
         int pagingLimit = pageSize;
         int skip = (page - 1) * pagingLimit;
@@ -319,7 +308,7 @@ public class MinioFileStorage : IFileStorage
         };
     }
 
-    private async Task<List<FileSpec>> GetFileListAsync(string searchPattern = null, int? limit = null, int? skip = null, CancellationToken cancellationToken = default)
+    private async Task<List<FileSpec>> GetFileListAsync(string? searchPattern = null, int? limit = null, int? skip = null, CancellationToken cancellationToken = default)
     {
         if (limit is <= 0)
             return new List<FileSpec>();
@@ -365,16 +354,16 @@ public class MinioFileStorage : IFileStorage
 
     private string NormalizePath(string path)
     {
-        return path?.Replace('\\', '/');
+        return path.Replace('\\', '/');
     }
 
-    private class SearchCriteria
+    private record SearchCriteria
     {
-        public string Prefix { get; set; }
-        public Regex Pattern { get; set; }
+        public required string Prefix { get; init; }
+        public Regex? Pattern { get; init; }
     }
 
-    private SearchCriteria GetRequestCriteria(string searchPattern)
+    private SearchCriteria GetRequestCriteria(string? searchPattern)
     {
         if (String.IsNullOrEmpty(searchPattern))
             return new SearchCriteria { Prefix = String.Empty };
@@ -384,7 +373,7 @@ public class MinioFileStorage : IFileStorage
         bool hasWildcard = wildcardPos >= 0;
 
         string prefix = normalizedSearchPattern;
-        Regex patternRegex = null;
+        Regex? patternRegex = null;
 
         if (hasWildcard)
         {
@@ -402,7 +391,11 @@ public class MinioFileStorage : IFileStorage
 
     private (IMinioClient Client, string Bucket) CreateClient(MinioFileStorageOptions options)
     {
+        ArgumentException.ThrowIfNullOrEmpty(options.ConnectionString, nameof(options.ConnectionString));
+
         var connectionString = new MinioFileStorageConnectionStringBuilder(options.ConnectionString);
+
+        ArgumentException.ThrowIfNullOrEmpty(connectionString.EndPoint, nameof(connectionString.EndPoint));
 
         string endpoint;
         bool secure;
@@ -424,7 +417,7 @@ public class MinioFileStorage : IFileStorage
             .WithCredentials(connectionString.AccessKey, connectionString.SecretKey);
 
         if (!String.IsNullOrEmpty(connectionString.Region))
-            client.WithRegion(connectionString.Region ?? String.Empty);
+            client.WithRegion(connectionString.Region);
 
         client.Build();
 
@@ -434,5 +427,8 @@ public class MinioFileStorage : IFileStorage
         return (client, connectionString.Bucket);
     }
 
-    public void Dispose() { }
+    public void Dispose()
+    {
+        _client.Dispose();
+    }
 }

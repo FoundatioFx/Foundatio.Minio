@@ -4,7 +4,7 @@ namespace Foundatio.Storage;
 
 public class MinioFileStorageOptions : SharedOptions
 {
-    public string ConnectionString { get; set; }
+    public string? ConnectionString { get; set; }
     public bool AutoCreateBucket { get; set; }
 }
 
@@ -12,8 +12,7 @@ public class MinioFileStorageOptionsBuilder : SharedOptionsBuilder<MinioFileStor
 {
     public MinioFileStorageOptionsBuilder ConnectionString(string connectionString)
     {
-        if (String.IsNullOrEmpty(connectionString))
-            throw new ArgumentNullException(nameof(connectionString));
+        ArgumentException.ThrowIfNullOrEmpty(connectionString);
         Target.ConnectionString = connectionString;
         return this;
     }

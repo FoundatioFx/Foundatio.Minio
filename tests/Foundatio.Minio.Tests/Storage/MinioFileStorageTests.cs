@@ -13,7 +13,7 @@ public class MinioFileStorageTests : FileStorageTestsBase
 
     public MinioFileStorageTests(ITestOutputHelper output) : base(output) { }
 
-    protected override IFileStorage GetStorage()
+    protected override IFileStorage? GetStorage()
     {
         var section = Configuration.GetSection("Minio");
         var connectionStringBuilder = new MinioFileStorageConnectionStringBuilder

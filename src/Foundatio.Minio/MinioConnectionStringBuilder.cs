@@ -1,24 +1,24 @@
-﻿using System;
+using System;
 using System.Linq;
+using System.Text;
 
 namespace Foundatio;
 
 public class MinioConnectionStringBuilder
 {
-    public string AccessKey { get; set; }
+    public string? AccessKey { get; set; }
 
-    public string SecretKey { get; set; }
+    public string? SecretKey { get; set; }
 
-    public string Region { get; set; }
+    public string? Region { get; set; }
 
-    public string EndPoint { get; set; }
+    public string? EndPoint { get; set; }
 
     protected MinioConnectionStringBuilder() { }
 
     protected MinioConnectionStringBuilder(string connectionString)
     {
-        if (String.IsNullOrEmpty(connectionString))
-            throw new ArgumentNullException(nameof(connectionString));
+        ArgumentException.ThrowIfNullOrEmpty(connectionString);
         Parse(connectionString);
     }
 
@@ -74,15 +74,15 @@ public class MinioConnectionStringBuilder
 
     public override string ToString()
     {
-        var connectionString = string.Empty;
-        if (!string.IsNullOrEmpty(AccessKey))
-            connectionString += "AccessKey=" + AccessKey + ";";
-        if (!string.IsNullOrEmpty(SecretKey))
-            connectionString += "SecretKey=" + SecretKey + ";";
-        if (!string.IsNullOrEmpty(Region))
-            connectionString += "Region=" + Region + ";";
-        if (!string.IsNullOrEmpty(EndPoint))
-            connectionString += "EndPoint=" + EndPoint + ";";
-        return connectionString;
+        var sb = new StringBuilder();
+        if (!String.IsNullOrEmpty(AccessKey))
+            sb.Append("AccessKey=").Append(AccessKey).Append(';');
+        if (!String.IsNullOrEmpty(SecretKey))
+            sb.Append("SecretKey=").Append(SecretKey).Append(';');
+        if (!String.IsNullOrEmpty(Region))
+            sb.Append("Region=").Append(Region).Append(';');
+        if (!String.IsNullOrEmpty(EndPoint))
+            sb.Append("EndPoint=").Append(EndPoint).Append(';');
+        return sb.ToString();
     }
 }

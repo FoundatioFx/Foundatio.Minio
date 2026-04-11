@@ -1,4 +1,4 @@
-﻿using Foundatio.Storage;
+using Foundatio.Storage;
 using Xunit;
 
 namespace Foundatio.Minio.Tests.Storage;
