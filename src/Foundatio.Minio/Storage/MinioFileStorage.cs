@@ -74,7 +74,7 @@ public class MinioFileStorage : IFileStorage
 
         await EnsureBucketExists().AnyContext();
 
-        string normalizedPath = NormalizePath(path)!;
+        string normalizedPath = NormalizePath(path);
         _logger.LogTrace("Getting file stream for {Path}", normalizedPath);
 
         try
@@ -97,7 +97,7 @@ public class MinioFileStorage : IFileStorage
 
         await EnsureBucketExists().AnyContext();
 
-        string normalizedPath = NormalizePath(path)!;
+        string normalizedPath = NormalizePath(path);
         _logger.LogTrace("Getting file info for {Path}", normalizedPath);
 
         try
@@ -127,7 +127,7 @@ public class MinioFileStorage : IFileStorage
 
         await EnsureBucketExists().AnyContext();
 
-        string normalizedPath = NormalizePath(path)!;
+        string normalizedPath = NormalizePath(path);
         _logger.LogTrace("Checking if {Path} exists", normalizedPath);
 
         try
@@ -152,26 +152,15 @@ public class MinioFileStorage : IFileStorage
 
         await EnsureBucketExists().AnyContext();
 
-        string normalizedPath = NormalizePath(path)!;
+        string normalizedPath = NormalizePath(path);
         _logger.LogTrace("Saving {Path}", normalizedPath);
 
-        if (stream.CanSeek)
+        var seekableStream = stream.CanSeek ? stream : new MemoryStream();
+        if (!stream.CanSeek)
         {
-            try
-            {
-                await _client.PutObjectAsync(new PutObjectArgs().WithBucket(_bucket).WithObject(normalizedPath).WithStreamData(stream).WithObjectSize(stream.Length - stream.Position), cancellationToken).AnyContext();
-                return true;
-            }
-            catch (MinioException ex)
-            {
-                _logger.LogError(ex, "Error saving {Path}: {Message}", normalizedPath, ex.Message);
-                return false;
-            }
+            await stream.CopyToAsync(seekableStream).AnyContext();
+            seekableStream.Seek(0, SeekOrigin.Begin);
         }
-
-        using var seekableStream = new MemoryStream();
-        await stream.CopyToAsync(seekableStream).AnyContext();
-        seekableStream.Seek(0, SeekOrigin.Begin);
 
         try
         {
@@ -183,6 +172,11 @@ public class MinioFileStorage : IFileStorage
             _logger.LogError(ex, "Error saving {Path}: {Message}", normalizedPath, ex.Message);
             return false;
         }
+        finally
+        {
+            if (!stream.CanSeek)
+                seekableStream.Dispose();
+        }
     }
 
     public async Task<bool> RenameFileAsync(string path, string newPath, CancellationToken cancellationToken = default)
@@ -192,8 +186,8 @@ public class MinioFileStorage : IFileStorage
 
         await EnsureBucketExists().AnyContext();
 
-        string normalizedPath = NormalizePath(path)!;
-        string normalizedNewPath = NormalizePath(newPath)!;
+        string normalizedPath = NormalizePath(path);
+        string normalizedNewPath = NormalizePath(newPath);
         _logger.LogInformation("Renaming {Path} to {NewPath}", normalizedPath, normalizedNewPath);
 
         return await CopyFileAsync(normalizedPath, normalizedNewPath, cancellationToken).AnyContext() &&
@@ -207,8 +201,8 @@ public class MinioFileStorage : IFileStorage
 
         await EnsureBucketExists().AnyContext();
 
-        string normalizedPath = NormalizePath(path)!;
-        string normalizedTargetPath = NormalizePath(targetPath)!;
+        string normalizedPath = NormalizePath(path);
+        string normalizedTargetPath = NormalizePath(targetPath);
         _logger.LogInformation("Copying {Path} to {TargetPath}", normalizedPath, normalizedTargetPath);
 
         try
@@ -234,7 +228,7 @@ public class MinioFileStorage : IFileStorage
 
         await EnsureBucketExists().AnyContext();
 
-        string normalizedPath = NormalizePath(path)!;
+        string normalizedPath = NormalizePath(path);
         _logger.LogTrace("Deleting {Path}", normalizedPath);
 
         try
@@ -263,7 +257,7 @@ public class MinioFileStorage : IFileStorage
                 break;
 
             var args = new RemoveObjectsArgs().WithBucket(_bucket)
-                .WithObjects(result.Files.Select(spec => NormalizePath(spec.Path)!).ToList());
+                .WithObjects(result.Files.Select(spec => NormalizePath(spec.Path)).ToList());
 
             var response = await _client.RemoveObjectsAsync(args, cancellation).AnyContext();
             count += result.Files.Count;
@@ -358,9 +352,9 @@ public class MinioFileStorage : IFileStorage
         }).ToList();
     }
 
-    private string? NormalizePath(string? path)
+    private string NormalizePath(string path)
     {
-        return path?.Replace('\\', '/');
+        return path.Replace('\\', '/');
     }
 
     private record SearchCriteria
@@ -374,7 +368,7 @@ public class MinioFileStorage : IFileStorage
         if (String.IsNullOrEmpty(searchPattern))
             return new SearchCriteria { Prefix = String.Empty };
 
-        string normalizedSearchPattern = NormalizePath(searchPattern)!;
+        string normalizedSearchPattern = NormalizePath(searchPattern);
         int wildcardPos = normalizedSearchPattern.IndexOf('*');
         bool hasWildcard = wildcardPos >= 0;
 
