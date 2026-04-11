@@ -318,7 +318,7 @@ public class MinioFileStorage : IFileStorage
 
         _logger.LogTrace(
             s => s.Property("SearchPattern", searchPattern).Property("Limit", limit).Property("Skip", skip),
-            "Getting file list recursively matching {Prefix} and {Pattern}...", criteria.Prefix, (object?)criteria.Pattern ?? "(none)"
+            "Getting file list recursively matching {Prefix} and {Pattern}...", criteria.Prefix, criteria.Pattern
         );
 
         await foreach (var item in _client.ListObjectsEnumAsync(
@@ -359,8 +359,8 @@ public class MinioFileStorage : IFileStorage
 
     private record SearchCriteria
     {
-        public required string Prefix { get; set; }
-        public Regex? Pattern { get; set; }
+        public required string Prefix { get; init; }
+        public Regex? Pattern { get; init; }
     }
 
     private SearchCriteria GetRequestCriteria(string? searchPattern)
