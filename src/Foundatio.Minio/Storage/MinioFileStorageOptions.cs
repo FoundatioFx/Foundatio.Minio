@@ -10,10 +10,9 @@ public class MinioFileStorageOptions : SharedOptions
 
 public class MinioFileStorageOptionsBuilder : SharedOptionsBuilder<MinioFileStorageOptions, MinioFileStorageOptionsBuilder>
 {
-    public MinioFileStorageOptionsBuilder ConnectionString(string connectionString)
+    public MinioFileStorageOptionsBuilder ConnectionString(string? connectionString)
     {
-        ArgumentException.ThrowIfNullOrEmpty(connectionString);
-        Target.ConnectionString = connectionString;
+        Target.ConnectionString = String.IsNullOrEmpty(connectionString) ? null : connectionString;
         return this;
     }
 
